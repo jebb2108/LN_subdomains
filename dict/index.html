@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Словарь Telegram-бота</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="" crossorigin="anonymous">
-    <link rel="stylesheet" href="styles.css?v=20250826-1" />
+    <link rel="stylesheet" href="styles.css?v=20250826-2" />
 </head>
 <body>
     <div class="book-container">
@@ -133,6 +133,14 @@
 
     <div class="notification" id="notification" role="status" aria-live="polite"></div>
 
-    <script src="app.js?v=20250826-1"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(regs => {
+            regs.forEach(r => r.unregister());
+        });
+        }
+    </script>
+
+    <script src="app.js?v=20250826-2"></script>
 </body>
 </html>
