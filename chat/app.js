@@ -1,68 +1,99 @@
+// Получаем room_id из URL
+const pathParts = window.location.pathname.split('/');
+const roomId = pathParts[pathParts.length - 1];
+const token = new URLSearchParams(window.location.search).get('token');
+
+// Переменные для хранения состояния
+let userName = '';
+let userInfoReceived = false;
+let pendingMessages = [];
 let sessionTimer;
 
-// Получаем токен из URL
-const urlParams = new URLSearchParams(window.location.search);
-const token = urlParams.get('token');
-
-// Подключаемся с токеном
-let socket = io('http://localhost:4000', {
-    query: { token: token }
+// Подключаемся к Socket.IO серверу
+const socket = io({
+    query: {
+        token: token,
+        room_id: roomId
+    }
 });
 
-// Установка имени пользователя при подключении
-socket.on('connect', function() {
-    socket.emit('set_username', userName);
-
-    // Устанавливаем таймер блокировки чата через 15 минут
-    sessionTimer = setTimeout(() => {
-        document.getElementById('messageInput').disabled = true;
-        document.getElementById('sendButton').disabled = true;
-
-        // Добавляем сообщение о завершении сессии
-        const container = document.getElementById('messagesContainer');
-        const sessionEndedMessage = document.createElement('div');
-        sessionEndedMessage.className = 'session-ended-message';
-        sessionEndedMessage.textContent = 'Сессия завершена. Чат заблокирован.';
-        container.appendChild(sessionEndedMessage);
-        container.scrollTop = container.scrollHeight;
-    }, 900000); // 15 минут в миллисекундах
+// Получаем информацию о пользователе от сервера
+socket.on('user_info', function(data) {
+    userName = data.username;
+    userInfoReceived = true;
+    
+    // Обрабатываем сообщения, которые пришли до получения информации о пользователе
+    processPendingMessages();
 });
 
 // Обработчик нового сообщения от сервера
-socket.on('new_message', function (data) {
-    addMessageToChat(data, data.sender === userName);
+socket.on('new_message', function(data) {
+    if (userInfoReceived) {
+        addMessageToChat(data, data.sender === userName);
+    } else {
+        pendingMessages.push(data);
+    }
 });
 
 // Обработчик истории сообщений при подключении
-socket.on('message_history', function (messages) {
+socket.on('message_history', function(messages) {
     const container = document.getElementById('messagesContainer');
-    // Очищаем системное сообщение
     container.innerHTML = '';
 
-    messages.forEach(msg => {
-        addMessageToChat(msg, msg.sender === userName);
-    });
+    if (userInfoReceived) {
+        messages.forEach(msg => {
+            addMessageToChat(msg, msg.sender === userName);
+        });
+    } else {
+        pendingMessages = messages;
+    }
+});
+
+// Установка соединения
+socket.on('connect', function() {
+    // Устанавливаем таймер блокировки чата через 15 минут
+    sessionTimer = setTimeout(() => {
+        endSession();
+    }, 900000);
 });
 
 // Обработчик завершения сессии от сервера
 socket.on('session_ended', function(data) {
-    // Блокируем чат при получении события от сервера
+    endSession();
+    
+    // Очищаем таймер, так как сессия уже завершена
+    if (sessionTimer) {
+        clearTimeout(sessionTimer);
+    }
+});
+
+// Функция для обработки ожидающих сообщений
+function processPendingMessages() {
+    const container = document.getElementById('messagesContainer');
+    
+    if (pendingMessages.length > 0) {
+        container.innerHTML = '';
+        
+        pendingMessages.forEach(msg => {
+            addMessageToChat(msg, msg.sender === userName);
+        });
+        
+        pendingMessages = [];
+    }
+}
+
+// Функция завершения сессии
+function endSession() {
     document.getElementById('messageInput').disabled = true;
     document.getElementById('sendButton').disabled = true;
 
-    // Добавляем сообщение о завершении сессии
     const container = document.getElementById('messagesContainer');
     const sessionEndedMessage = document.createElement('div');
     sessionEndedMessage.className = 'session-ended-message';
     sessionEndedMessage.textContent = 'Сессия завершена. Чат заблокирован.';
     container.appendChild(sessionEndedMessage);
     container.scrollTop = container.scrollHeight;
-
-    // Очищаем таймер, так как сессия уже завершена
-    if (sessionTimer) {
-        clearTimeout(sessionTimer);
-    }
-});
+}
 
 // Функция добавления сообщения в чат
 function addMessageToChat(messageData, isMyMessage = false) {
