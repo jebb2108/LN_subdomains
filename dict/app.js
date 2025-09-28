@@ -16,96 +16,142 @@ const API_BASE_URL = window.location.origin || 'https://dict.lllang.site';
 
 // --- Init ---
 document.addEventListener('DOMContentLoaded', () => {
-    userIdElement = document.getElementById('userId');
-    wordsListElement = document.getElementById('wordsList');
-    notificationElement = document.getElementById('notification');
-    loadingOverlay = document.getElementById('loadingOverlay');
-    wordsLoading = document.getElementById('wordsLoading');
-    bookmarksHint = document.querySelector('.bookmarks-hint');
-
-    // 🔄 УНИВЕРСАЛЬНЫЙ ОБРАБОТЧИК TELEGRAM WEBAPP
-    function initializeTelegramWebApp() {
-        console.log('🔄 Инициализация Telegram WebApp...');
+    // 🔍 === БЫСТРАЯ ДИАГНОСТИКА - НАЧАЛО ===
+    console.log('🚀 Страница загружена, начинаем диагностику...');
+    
+    // Создаем элементы диагностики, если их нет
+    if (!document.getElementById('debugPanel')) {
+        const debugPanel = document.createElement('div');
+        debugPanel.id = 'debugPanel';
+        debugPanel.style.cssText = 'display: none; position: fixed; top: 10px; right: 10px; width: 400px; height: 300px; background: rgba(0,0,0,0.9); color: #00ff00; overflow: auto; z-index: 10000; font-size: 12px; padding: 10px; border-radius: 8px; border: 1px solid #00ff00; font-family: monospace;';
+        document.body.appendChild(debugPanel);
+    }
+    
+    if (!document.getElementById('toggleDebug')) {
+        const toggleButton = document.createElement('button');
+        toggleButton.id = 'toggleDebug';
+        toggleButton.textContent = 'DEBUG';
+        toggleButton.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 10001; background: #ff4444; color: white; border: none; padding: 10px 15px; border-radius: 5px; font-weight: bold; cursor: pointer;';
+        document.body.appendChild(toggleButton);
+    }
+    
+    const debugPanel = document.getElementById('debugPanel');
+    const toggleButton = document.getElementById('toggleDebug');
+    const logs = [];
+    
+    // Функция для добавления лога в панель
+    function addLog(level, args) {
+        const timestamp = new Date().toLocaleTimeString();
+        const message = args.map(arg => 
+            typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+        ).join(' ');
         
-        // Проверяем доступность Telegram WebApp
-        if (typeof Telegram === 'undefined' || !Telegram.WebApp) {
-            console.warn('⚠️ Telegram WebApp не доступен в этом окружении');
-            return null;
+        const logEntry = `[${timestamp}] ${level}: ${message}`;
+        logs.push(logEntry);
+        
+        if (debugPanel) {
+            // Показываем только последние 50 сообщений
+            const recentLogs = logs.slice(-50);
+            debugPanel.innerHTML = recentLogs.join('<br>');
+            debugPanel.scrollTop = debugPanel.scrollHeight;
         }
         
-        const tg = Telegram.WebApp;
-        
+        // Также сохраняем в localStorage для последующего анализа
         try {
-            // Инициализируем WebApp
-            tg.ready();
-            tg.expand();
-            
-            console.log('🎯 Состояние WebApp:');
-            console.log('  - initData:', tg.initData ? 'присутствует' : 'отсутствует');
-            console.log('  - initDataUnsafe:', tg.initDataUnsafe);
-            console.log('  - platform:', tg.platform);
-            console.log('  - version:', tg.version);
-            
-            // Способ 1: Получаем user_id из данных пользователя Telegram
-            if (tg.initDataUnsafe?.user?.id) {
-                const userId = String(tg.initDataUnsafe.user.id);
-                console.log('✅ user_id получен из Telegram пользователя:', userId);
-                return userId;
-            }
-            
-            // Способ 2: Пробуем распарсить initData вручную для получения user_id
-            if (tg.initData) {
-                const params = new URLSearchParams(tg.initData);
-                const userParam = params.get('user');
-                if (userParam) {
-                    try {
-                        const userData = JSON.parse(decodeURIComponent(userParam));
-                        if (userData.id) {
-                            const userId = String(userData.id);
-                            console.log('✅ user_id получен из ручного парсинга:', userId);
-                            return userId;
-                        }
-                    } catch (e) {
-                        console.warn('❌ Ошибка парсинга user данных:', e);
-                    }
-                }
-            }
-            
-            console.warn('❌ Не удалось получить user_id из Telegram WebApp');
-            return null;
-            
-        } catch (error) {
-            console.error('💥 Ошибка инициализации Telegram WebApp:', error);
-            return null;
+            localStorage.setItem('last_debug_logs', JSON.stringify(logs.slice(-100)));
+        } catch (e) {
+            // Игнорируем ошибки localStorage
         }
     }
-
-// Для быстрой отладки
-function showDiagnostics() {
-    const diagnostics = [
-        'Telegram available: ' + (typeof Telegram !== 'undefined'),
-        'WebApp available: ' + (!!window.Telegram?.WebApp),
-        'User ID: ' + (window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 'NOT FOUND'),
-        'Platform: ' + (window.Telegram?.WebApp?.platform || 'unknown'),
-        'Version: ' + (window.Telegram?.WebApp?.version || 'unknown')
-    ];
     
-    alert('Диагностика:\n' + diagnostics.join('\n'));
-}
-
-// Показываем диагностику при долгом нажатии на заголовок
-document.addEventListener('DOMContentLoaded', () => {
-    const title = document.querySelector('h2') || document.body;
-    let pressTimer;
+    // Перехватываем console методы
+    const originalConsole = {
+        log: console.log,
+        error: console.error,
+        warn: console.warn,
+        info: console.info
+    };
     
-    title.addEventListener('touchstart', () => {
-        pressTimer = setTimeout(showDiagnostics, 3000);
+    console.log = function(...args) {
+        originalConsole.log.apply(console, args);
+        addLog('LOG', args);
+    };
+    
+    console.error = function(...args) {
+        originalConsole.error.apply(console, args);
+        addLog('ERROR', args);
+    };
+    
+    console.warn = function(...args) {
+        originalConsole.warn.apply(console, args);
+        addLog('WARN', args);
+    };
+    
+    console.info = function(...args) {
+        originalConsole.info.apply(console, args);
+        addLog('INFO', args);
+    };
+    
+    // Обработчик кнопки debug
+    toggleButton.addEventListener('click', () => {
+        if (debugPanel.style.display === 'none') {
+            debugPanel.style.display = 'block';
+            toggleButton.textContent = 'HIDE DEBUG';
+            toggleButton.style.background = '#44ff44';
+        } else {
+            debugPanel.style.display = 'none';
+            toggleButton.textContent = 'DEBUG';
+            toggleButton.style.background = '#ff4444';
+        }
     });
     
-    title.addEventListener('touchend', () => {
-        clearTimeout(pressTimer);
-    });
-});
+    // Логируем ключевую информацию о Telegram WebApp
+    console.log('=== TELEGRAM WEBAPP DIAGNOSTICS ===');
+    console.log('Window location:', window.location.href);
+    console.log('User agent:', navigator.userAgent);
+    
+    if (typeof Telegram === 'undefined') {
+        console.error('❌ Telegram object is UNDEFINED');
+        console.error('Приложение открыто не в Telegram или WebApp не загрузился');
+    } else {
+        console.log('✅ Telegram object is available');
+        
+        if (!Telegram.WebApp) {
+            console.error('❌ Telegram.WebApp is UNDEFINED');
+        } else {
+            console.log('✅ Telegram.WebApp is available');
+            const tg = Telegram.WebApp;
+            
+            // Инициализируем WebApp
+            try {
+                tg.ready();
+                tg.expand();
+                console.log('✅ WebApp инициализирован');
+            } catch (e) {
+                console.error('❌ Ошибка инициализации WebApp:', e);
+            }
+            
+            console.log('📊 WebApp version:', tg.version);
+            console.log('📱 Platform:', tg.platform);
+            console.log('🎨 Theme params:', tg.themeParams);
+            console.log('🔗 initData:', tg.initData);
+            console.log('👤 initDataUnsafe:', tg.initDataUnsafe);
+            console.log('🆔 User object:', tg.initDataUnsafe?.user);
+            console.log('🔍 User ID:', tg.initDataUnsafe?.user?.id);
+            
+            if (tg.initDataUnsafe?.user?.id) {
+                console.log('✅ USER ID НАЙДЕН:', tg.initDataUnsafe.user.id);
+            } else {
+                console.error('❌ USER ID НЕ НАЙДЕН в initDataUnsafe.user');
+                console.log('💡 Проверьте:');
+                console.log('   - Открыт ли Mini App через бота');
+                console.log('   - Нажата ли кнопка START в боте');
+                console.log('   - Авторизован ли пользователь');
+            }
+        }
+    }
+    
+    console.log('=== ДИАГНОСТИКА ЗАВЕРШЕНА ===');
 
     // 🔄 ФУНКЦИЯ ДЛЯ НАСТРОЙКИ ОСТАЛЬНЫХ СЛУШАТЕЛЕЙ СОБЫТИЙ
     function setupEventListeners() {
