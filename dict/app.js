@@ -80,6 +80,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+// Для быстрой отладки
+function showDiagnostics() {
+    const diagnostics = [
+        'Telegram available: ' + (typeof Telegram !== 'undefined'),
+        'WebApp available: ' + (!!window.Telegram?.WebApp),
+        'User ID: ' + (window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 'NOT FOUND'),
+        'Platform: ' + (window.Telegram?.WebApp?.platform || 'unknown'),
+        'Version: ' + (window.Telegram?.WebApp?.version || 'unknown')
+    ];
+    
+    alert('Диагностика:\n' + diagnostics.join('\n'));
+}
+
+// Показываем диагностику при долгом нажатии на заголовок
+document.addEventListener('DOMContentLoaded', () => {
+    const title = document.querySelector('h2') || document.body;
+    let pressTimer;
+    
+    title.addEventListener('touchstart', () => {
+        pressTimer = setTimeout(showDiagnostics, 3000);
+    });
+    
+    title.addEventListener('touchend', () => {
+        clearTimeout(pressTimer);
+    });
+});
+
     // 🔄 ФУНКЦИЯ ДЛЯ НАСТРОЙКИ ОСТАЛЬНЫХ СЛУШАТЕЛЕЙ СОБЫТИЙ
     function setupEventListeners() {
         // Делегирование удаления
@@ -156,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             // 4. Если user_id не найден
             console.error('❌ Не удалось определить user_id');
-            showNotification('Ошибка: Не указан user_id :(', 'error');
+            showNotification('Ошибка: Не указан user_id', 'error');
             if (userIdElement) {
                 userIdElement.textContent = 'не определен';
             }
