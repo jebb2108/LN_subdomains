@@ -15,143 +15,163 @@ let currentUserId = null;
 const API_BASE_URL = window.location.origin || 'https://dict.lllang.site';
 
 // --- Init ---
+// --- Init ---
 document.addEventListener('DOMContentLoaded', () => {
-    // 🔍 === БЫСТРАЯ ДИАГНОСТИКА - НАЧАЛО ===
-    console.log('🚀 Страница загружена, начинаем диагностику...');
-    
-    // Создаем элементы диагностики, если их нет
-    if (!document.getElementById('debugPanel')) {
-        const debugPanel = document.createElement('div');
-        debugPanel.id = 'debugPanel';
-        debugPanel.style.cssText = 'display: none; position: fixed; top: 10px; right: 10px; width: 400px; height: 300px; background: rgba(0,0,0,0.9); color: #00ff00; overflow: auto; z-index: 10000; font-size: 12px; padding: 10px; border-radius: 8px; border: 1px solid #00ff00; font-family: monospace;';
-        document.body.appendChild(debugPanel);
-    }
-    
-    if (!document.getElementById('toggleDebug')) {
-        const toggleButton = document.createElement('button');
-        toggleButton.id = 'toggleDebug';
-        toggleButton.textContent = 'DEBUG';
-        toggleButton.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 10001; background: #ff4444; color: white; border: none; padding: 10px 15px; border-radius: 5px; font-weight: bold; cursor: pointer;';
-        document.body.appendChild(toggleButton);
-    }
-    
-    const debugPanel = document.getElementById('debugPanel');
-    const toggleButton = document.getElementById('toggleDebug');
-    const logs = [];
-    
-    // Функция для добавления лога в панель
-    function addLog(level, args) {
-        const timestamp = new Date().toLocaleTimeString();
-        const message = args.map(arg => 
-            typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-        ).join(' ');
+    userIdElement = document.getElementById('userId');
+    wordsListElement = document.getElementById('wordsList');
+    notificationElement = document.getElementById('notification');
+    loadingOverlay = document.getElementById('loadingOverlay');
+    wordsLoading = document.getElementById('wordsLoading');
+    bookmarksHint = document.querySelector('.bookmarks-hint');
+
+    // 🔄 УЛУЧШЕННАЯ ИНИЦИАЛИЗАЦИЯ С ИЗВЛЕЧЕНИЕМ ИЗ URL
+    function initializeFromURL() {
+        console.log('🔄 Извлечение данных из URL...');
         
-        const logEntry = `[${timestamp}] ${level}: ${message}`;
-        logs.push(logEntry);
-        
-        if (debugPanel) {
-            // Показываем только последние 50 сообщений
-            const recentLogs = logs.slice(-50);
-            debugPanel.innerHTML = recentLogs.join('<br>');
-            debugPanel.scrollTop = debugPanel.scrollHeight;
-        }
-        
-        // Также сохраняем в localStorage для последующего анализа
         try {
-            localStorage.setItem('last_debug_logs', JSON.stringify(logs.slice(-100)));
-        } catch (e) {
-            // Игнорируем ошибки localStorage
-        }
-    }
-    
-    // Перехватываем console методы
-    const originalConsole = {
-        log: console.log,
-        error: console.error,
-        warn: console.warn,
-        info: console.info
-    };
-    
-    console.log = function(...args) {
-        originalConsole.log.apply(console, args);
-        addLog('LOG', args);
-    };
-    
-    console.error = function(...args) {
-        originalConsole.error.apply(console, args);
-        addLog('ERROR', args);
-    };
-    
-    console.warn = function(...args) {
-        originalConsole.warn.apply(console, args);
-        addLog('WARN', args);
-    };
-    
-    console.info = function(...args) {
-        originalConsole.info.apply(console, args);
-        addLog('INFO', args);
-    };
-    
-    // Обработчик кнопки debug
-    toggleButton.addEventListener('click', () => {
-        if (debugPanel.style.display === 'none') {
-            debugPanel.style.display = 'block';
-            toggleButton.textContent = 'HIDE DEBUG';
-            toggleButton.style.background = '#44ff44';
-        } else {
-            debugPanel.style.display = 'none';
-            toggleButton.textContent = 'DEBUG';
-            toggleButton.style.background = '#ff4444';
-        }
-    });
-    
-    // Логируем ключевую информацию о Telegram WebApp
-    console.log('=== TELEGRAM WEBAPP DIAGNOSTICS ===');
-    console.log('Window location:', window.location.href);
-    console.log('User agent:', navigator.userAgent);
-    
-    if (typeof Telegram === 'undefined') {
-        console.error('❌ Telegram object is UNDEFINED');
-        console.error('Приложение открыто не в Telegram или WebApp не загрузился');
-    } else {
-        console.log('✅ Telegram object is available');
-        
-        if (!Telegram.WebApp) {
-            console.error('❌ Telegram.WebApp is UNDEFINED');
-        } else {
-            console.log('✅ Telegram.WebApp is available');
-            const tg = Telegram.WebApp;
+            // Получаем параметры из hash
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            const tgWebAppData = hashParams.get('tgWebAppData');
             
-            // Инициализируем WebApp
-            try {
+            if (tgWebAppData) {
+                console.log('✅ tgWebAppData найден в URL');
+                
+                // Парсим tgWebAppData
+                const dataParams = new URLSearchParams(tgWebAppData);
+                const userParam = dataParams.get('user');
+                
+                if (userParam) {
+                    // Декодируем и парсим JSON с пользователем
+                    const decodedUser = decodeURIComponent(userParam);
+                    const userData = JSON.parse(decodedUser);
+                    
+                    console.log('👤 Данные пользователя из URL:', userData);
+                    
+                    if (userData && userData.id) {
+                        const userId = String(userData.id);
+                        console.log('✅ USER ID извлечен из URL:', userId);
+                        return userId;
+                    }
+                }
+            }
+            
+            // Альтернативный способ: ищем в обычных query параметрах
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlUserId = urlParams.get('user_id');
+            if (urlUserId) {
+                console.log('✅ USER ID из query параметров:', urlUserId);
+                return urlUserId;
+            }
+            
+        } catch (error) {
+            console.error('❌ Ошибка при извлечении данных из URL:', error);
+        }
+        
+        return null;
+    }
+
+    // 🔄 ФУНКЦИЯ ДЛЯ ЗАГРУЗКИ TELEGRAM WEBAPP С FALLBACK
+    function loadTelegramWebApp() {
+        return new Promise((resolve) => {
+            // Если Telegram уже загружен, используем его
+            if (window.Telegram?.WebApp) {
+                console.log('✅ Telegram WebApp уже загружен');
+                const tg = window.Telegram.WebApp;
                 tg.ready();
                 tg.expand();
-                console.log('✅ WebApp инициализирован');
-            } catch (e) {
-                console.error('❌ Ошибка инициализации WebApp:', e);
+                
+                if (tg.initDataUnsafe?.user?.id) {
+                    resolve(String(tg.initDataUnsafe.user.id));
+                    return;
+                }
             }
             
-            console.log('📊 WebApp version:', tg.version);
-            console.log('📱 Platform:', tg.platform);
-            console.log('🎨 Theme params:', tg.themeParams);
-            console.log('🔗 initData:', tg.initData);
-            console.log('👤 initDataUnsafe:', tg.initDataUnsafe);
-            console.log('🆔 User object:', tg.initDataUnsafe?.user);
-            console.log('🔍 User ID:', tg.initDataUnsafe?.user?.id);
+            // Если не загружен, пробуем загрузить скрипт
+            console.log('🔄 Попытка загрузки Telegram WebApp скрипта...');
+            const script = document.createElement('script');
+            script.src = 'https://telegram.org/js/telegram-web-app.js';
+            script.onload = () => {
+                console.log('✅ Telegram WebApp скрипт загружен');
+                if (window.Telegram?.WebApp) {
+                    const tg = window.Telegram.WebApp;
+                    tg.ready();
+                    tg.expand();
+                    
+                    if (tg.initDataUnsafe?.user?.id) {
+                        resolve(String(tg.initDataUnsafe.user.id));
+                    } else {
+                        resolve(null);
+                    }
+                } else {
+                    resolve(null);
+                }
+            };
+            script.onerror = () => {
+                console.error('❌ Ошибка загрузки Telegram WebApp скрипта');
+                resolve(null);
+            };
+            document.head.appendChild(script);
             
-            if (tg.initDataUnsafe?.user?.id) {
-                console.log('✅ USER ID НАЙДЕН:', tg.initDataUnsafe.user.id);
-            } else {
-                console.error('❌ USER ID НЕ НАЙДЕН в initDataUnsafe.user');
-                console.log('💡 Проверьте:');
-                console.log('   - Открыт ли Mini App через бота');
-                console.log('   - Нажата ли кнопка START в боте');
-                console.log('   - Авторизован ли пользователь');
+            // Таймаут на случай, если скрипт не загрузится
+            setTimeout(() => {
+                resolve(null);
+            }, 2000);
+        });
+    }
+
+    // 🔄 ОСНОВНАЯ ФУНКЦИЯ ИНИЦИАЛИЗАЦИИ
+    async function initializeApp() {
+        let userId = null;
+        
+        // 1. Пробуем загрузить Telegram WebApp
+        userId = await loadTelegramWebApp();
+        
+        // 2. Если не получилось, извлекаем из URL
+        if (!userId) {
+            userId = initializeFromURL();
+        }
+        
+        // 3. Устанавливаем user_id
+        if (userId) {
+            currentUserId = userId;
+            if (userIdElement) {
+                userIdElement.textContent = currentUserId;
+                userIdElement.style.color = '#4CAF50'; // Зеленый цвет для успеха
+            }
+            
+            console.log('🎉 USER ID установлен:', currentUserId);
+            
+            // Обновляем URL
+            updateUrlWithUserId(currentUserId);
+            
+            // Загружаем данные
+            loadWords();
+            loadStatistics();
+        } else {
+            // 4. Если user_id не найден
+            console.error('❌ Не удалось определить user_id');
+            showNotification('Ошибка: Не удалось определить ID пользователя', 'error');
+            if (userIdElement) {
+                userIdElement.textContent = 'не определен';
+                userIdElement.style.color = 'red';
             }
         }
+        
+        // Инициализируем остальные компоненты
+        setupEventListeners();
     }
-    
-    console.log('=== ДИАГНОСТИКА ЗАВЕРШЕНА ===');
+
+    // 🔄 ФУНКЦИЯ ОБНОВЛЕНИЯ URL
+    function updateUrlWithUserId(userId) {
+        try {
+            const url = new URL(window.location);
+            url.searchParams.set('user_id', userId);
+            window.history.replaceState({}, '', url);
+            console.log('🔗 URL обновлен:', url.toString());
+        } catch (e) {
+            console.warn('Не удалось обновить URL:', e);
+        }
+    }
 
     // 🔄 ФУНКЦИЯ ДЛЯ НАСТРОЙКИ ОСТАЛЬНЫХ СЛУШАТЕЛЕЙ СОБЫТИЙ
     function setupEventListeners() {
@@ -176,67 +196,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.style.display = 'none'; 
             });
         }
-    }
-
-    // 🔄 ФУНКЦИЯ ОБНОВЛЕНИЯ URL
-    function updateUrlWithUserId(userId) {
-        try {
-            const url = new URL(window.location);
-            
-            // Устанавливаем параметр user_id
-            url.searchParams.set('user_id', userId);
-            
-            // Меняем URL без перезагрузки страницы
-            window.history.replaceState({}, '', url.toString());
-            console.log('🔗 URL обновлен с user_id:', url.toString());
-        } catch (e) {
-            console.warn('Не удалось обновить URL:', e);
-        }
-    }
-
-    // 🔄 ОСНОВНАЯ ФУНКЦИЯ ИНИЦИАЛИЗАЦИИ
-    function initializeApp() {
-        let userId = null;
-
-        // 1. Пробуем получить user_id из Telegram WebApp
-        userId = initializeTelegramWebApp();
-
-        // 2. Если не получилось, проверяем URL параметры
-        if (!userId) {
-            const urlParams = new URLSearchParams(window.location.search);
-            userId = urlParams.get('user_id');
-            
-            if (userId) {
-                userId = String(userId);
-                console.log('✅ user_id получен из URL:', userId);
-            }
-        }
-
-        // 3. Если нашли user_id, устанавливаем его
-        if (userId) {
-            currentUserId = userId;
-            if (userIdElement) {
-                userIdElement.textContent = currentUserId;
-            }
-            
-            // Обновляем URL с полученным user_id
-            updateUrlWithUserId(currentUserId);
-            console.log('🎉 Текущий user_id:', currentUserId);
-            
-            // Загружаем данные
-            loadWords();
-            loadStatistics();
-        } else {
-            // 4. Если user_id не найден
-            console.error('❌ Не удалось определить user_id');
-            showNotification('Ошибка: Не указан user_id', 'error');
-            if (userIdElement) {
-                userIdElement.textContent = 'не определен';
-            }
-        }
-
-        // Инициализируем остальные компоненты
-        setupEventListeners();
     }
 
     // Запускаем инициализацию
