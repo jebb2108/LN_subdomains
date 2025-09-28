@@ -23,101 +23,152 @@ document.addEventListener('DOMContentLoaded', () => {
     wordsLoading = document.getElementById('wordsLoading');
     bookmarksHint = document.querySelector('.bookmarks-hint');
 
-    try {
-        if (window.Telegram?.WebApp) {
-            const tg = window.Telegram.WebApp;
-            
+    // 🔄 УНИВЕРСАЛЬНЫЙ ОБРАБОТЧИК TELEGRAM WEBAPP
+    function initializeTelegramWebApp() {
+        console.log('🔄 Инициализация Telegram WebApp...');
+        
+        // Проверяем доступность Telegram WebApp
+        if (typeof Telegram === 'undefined' || !Telegram.WebApp) {
+            console.warn('⚠️ Telegram WebApp не доступен в этом окружении');
+            return null;
+        }
+        
+        const tg = Telegram.WebApp;
+        
+        try {
             // Инициализируем WebApp
             tg.ready();
             tg.expand();
             
-            // Получаем данные пользователя
-            const initData = tg.initDataUnsafe;
+            console.log('🎯 Состояние WebApp:');
+            console.log('  - initData:', tg.initData ? 'присутствует' : 'отсутствует');
+            console.log('  - initDataUnsafe:', tg.initDataUnsafe);
+            console.log('  - platform:', tg.platform);
+            console.log('  - version:', tg.version);
             
-            if (initData?.user?.id) {
-                currentUserId = String(initData.user.id);
-                console.log('✅ ID пользователя получен из Telegram WebApp:', currentUserId);
-                
-                if (userIdElement) {
-                    userIdElement.textContent = currentUserId;
-                }
-                
-                // Обновляем URL с полученным ID
-                updateUrlWithUserId(currentUserId);
-            } else {
-                console.warn('❌ ID пользователя не найден в initDataUnsafe');
+            // Способ 1: Получаем user_id из данных пользователя Telegram
+            if (tg.initDataUnsafe?.user?.id) {
+                const userId = String(tg.initDataUnsafe.user.id);
+                console.log('✅ user_id получен из Telegram пользователя:', userId);
+                return userId;
             }
-        } else {
-            console.warn('⚠️ Telegram WebApp не доступен');
-        }
-    } catch (e) {
-        console.warn('Telegram WebApp init error:', e);
-    }
-
-    // 🔄 УЛУЧШЕННЫЙ FALLBACK: Ищем user_id в query string
-    if (!currentUserId) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlUserId = urlParams.get('user_id');
-        
-        if (urlUserId) {
-            currentUserId = String(urlUserId);
-            console.log('✅ ID пользователя получен из URL:', currentUserId);
             
-            if (userIdElement) userIdElement.textContent = currentUserId;
+            // Способ 2: Пробуем распарсить initData вручную для получения user_id
+            if (tg.initData) {
+                const params = new URLSearchParams(tg.initData);
+                const userParam = params.get('user');
+                if (userParam) {
+                    try {
+                        const userData = JSON.parse(decodeURIComponent(userParam));
+                        if (userData.id) {
+                            const userId = String(userData.id);
+                            console.log('✅ user_id получен из ручного парсинга:', userId);
+                            return userId;
+                        }
+                    } catch (e) {
+                        console.warn('❌ Ошибка парсинга user данных:', e);
+                    }
+                }
+            }
+            
+            console.warn('❌ Не удалось получить user_id из Telegram WebApp');
+            return null;
+            
+        } catch (error) {
+            console.error('💥 Ошибка инициализации Telegram WebApp:', error);
+            return null;
         }
     }
 
-    // 🔄 УЛУЧШЕННОЕ СООБЩЕНИЕ ОБ ОШИБКЕ
-    if (!currentUserId) {
-        console.error('❌ Не удалось определить ID пользователя');
-        showNotification('Ошибка: Не указан ID пользователя', 'error');
-        if (userIdElement) userIdElement.textContent = 'не определен';
-    } else {
-        console.log('🎉 ID пользователя установлен:', currentUserId);
+    // 🔄 ФУНКЦИЯ ДЛЯ НАСТРОЙКИ ОСТАЛЬНЫХ СЛУШАТЕЛЕЙ СОБЫТИЙ
+    function setupEventListeners() {
+        // Делегирование удаления
+        if (wordsListElement) {
+            wordsListElement.addEventListener('click', (event) => {
+                const btn = event.target.closest('.delete-btn');
+                if (!btn) return;
+                const wordId = btn.getAttribute('data-id');
+                deleteWord(wordId);
+            });
+        }
+
+        setupBookmarks();
+
+        document.getElementById('addWordBtn')?.addEventListener('click', addWord);
+        document.getElementById('searchBtn')?.addEventListener('click', findTranslation);
+        document.getElementById('refreshWordsBtn')?.addEventListener('click', loadWords);
+
+        if (bookmarksHint) {
+            bookmarksHint.addEventListener('click', function() { 
+                this.style.display = 'none'; 
+            });
+        }
     }
 
-    // Делегирование удаления
-    if (wordsListElement) {
-        wordsListElement.addEventListener('click', (event) => {
-            const btn = event.target.closest('.delete-btn');
-            if (!btn) return;
-            const wordId = btn.getAttribute('data-id');
-            deleteWord(wordId);
-        });
+    // 🔄 ФУНКЦИЯ ОБНОВЛЕНИЯ URL
+    function updateUrlWithUserId(userId) {
+        try {
+            const url = new URL(window.location);
+            
+            // Устанавливаем параметр user_id
+            url.searchParams.set('user_id', userId);
+            
+            // Меняем URL без перезагрузки страницы
+            window.history.replaceState({}, '', url.toString());
+            console.log('🔗 URL обновлен с user_id:', url.toString());
+        } catch (e) {
+            console.warn('Не удалось обновить URL:', e);
+        }
     }
 
-    setupBookmarks();
+    // 🔄 ОСНОВНАЯ ФУНКЦИЯ ИНИЦИАЛИЗАЦИИ
+    function initializeApp() {
+        let userId = null;
 
-    document.getElementById('addWordBtn')?.addEventListener('click', addWord);
-    document.getElementById('searchBtn')?.addEventListener('click', findTranslation);
-    document.getElementById('refreshWordsBtn')?.addEventListener('click', loadWords);
+        // 1. Пробуем получить user_id из Telegram WebApp
+        userId = initializeTelegramWebApp();
 
-    if (bookmarksHint) {
-        bookmarksHint.addEventListener('click', function() { this.style.display = 'none'; });
+        // 2. Если не получилось, проверяем URL параметры
+        if (!userId) {
+            const urlParams = new URLSearchParams(window.location.search);
+            userId = urlParams.get('user_id');
+            
+            if (userId) {
+                userId = String(userId);
+                console.log('✅ user_id получен из URL:', userId);
+            }
+        }
+
+        // 3. Если нашли user_id, устанавливаем его
+        if (userId) {
+            currentUserId = userId;
+            if (userIdElement) {
+                userIdElement.textContent = currentUserId;
+            }
+            
+            // Обновляем URL с полученным user_id
+            updateUrlWithUserId(currentUserId);
+            console.log('🎉 Текущий user_id:', currentUserId);
+            
+            // Загружаем данные
+            loadWords();
+            loadStatistics();
+        } else {
+            // 4. Если user_id не найден
+            console.error('❌ Не удалось определить user_id');
+            showNotification('Ошибка: Не указан user_id', 'error');
+            if (userIdElement) {
+                userIdElement.textContent = 'не определен';
+            }
+        }
+
+        // Инициализируем остальные компоненты
+        setupEventListeners();
     }
 
-    // initial load for words/stats when user id known
-    if (currentUserId) {
-        loadWords();
-        loadStatistics();
-    }
+    // Запускаем инициализацию
+    initializeApp();
 });
-
-// 🔄 НОВАЯ ФУНКЦИЯ: Обновляет URL с ID пользователя
-function updateUrlWithUserId(userId) {
-    try {
-        const url = new URL(window.location);
-        
-        // Устанавливаем параметр user_id
-        url.searchParams.set('user_id', userId);
-        
-        // Меняем URL без перезагрузки страницы
-        window.history.replaceState({}, '', url.toString());
-        console.log('🔗 URL обновлен с ID пользователя:', url.toString());
-    } catch (e) {
-        console.warn('Не удалось обновить URL:', e);
-    }
-}
 
 // --- Navigation bookmarks ---
 function setupBookmarks() {
@@ -170,7 +221,7 @@ function isSameOrigin(url) {
 // --- Load words ---
 async function loadWords() {
     if (!currentUserId) {
-        showNotification('ID пользователя не определен', 'error');
+        showNotification('user_id не определен', 'error');
         return;
     }
 
@@ -294,7 +345,7 @@ async function addWord() {
     }
 
     if (!currentUserId) {
-        showNotification('Ошибка: Не указан ID пользователя', 'error');
+        showNotification('Ошибка: Не указан user_id', 'error');
         return;
     }
 
@@ -345,7 +396,7 @@ async function findTranslation() {
 
     const word = searchWordInput.value.trim();
     if (!word) { showNotification('Введите слово для поиска', 'error'); return; }
-    if (!currentUserId) { showNotification('Ошибка: Не указан ID пользователя', 'error'); return; }
+    if (!currentUserId) { showNotification('Ошибка: Не указан user_id', 'error'); return; }
 
     const url = `${API_BASE_URL}/api/words/search?user_id=${encodeURIComponent(currentUserId)}&word=${encodeURIComponent(word)}`;
     try {
@@ -385,7 +436,7 @@ async function findTranslation() {
 async function deleteWord(wordId) {
     if (!wordId) { showNotification('Ошибка: не указан ID слова', 'error'); return; }
     if (!confirm('Вы уверены, что хотите удалить это слово?')) return;
-    if (!currentUserId) { showNotification('Ошибка: Не указан ID пользователя', 'error'); return; }
+    if (!currentUserId) { showNotification('Ошибка: Не указан user_id', 'error'); return; }
 
     const url = `${API_BASE_URL}/api/words/${encodeURIComponent(wordId)}?user_id=${encodeURIComponent(currentUserId)}`;
     try {
