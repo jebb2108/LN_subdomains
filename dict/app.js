@@ -23,35 +23,57 @@ document.addEventListener('DOMContentLoaded', () => {
     wordsLoading = document.getElementById('wordsLoading');
     bookmarksHint = document.querySelector('.bookmarks-hint');
 
-    // Telegram WebApp init (если доступен)
     try {
-        if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-            Telegram.WebApp.ready();
-            Telegram.WebApp.expand();
-            const initData = Telegram.WebApp.initDataUnsafe;
-            if (initData && initData.user && initData.user.id) {
+        if (window.Telegram?.WebApp) {
+            const tg = window.Telegram.WebApp;
+            
+            // Инициализируем WebApp
+            tg.ready();
+            tg.expand();
+            
+            // Получаем данные пользователя
+            const initData = tg.initDataUnsafe;
+            
+            if (initData?.user?.id) {
                 currentUserId = String(initData.user.id);
-                if (userIdElement) userIdElement.textContent = currentUserId;
+                console.log('✅ ID пользователя получен из Telegram WebApp:', currentUserId);
+                
+                if (userIdElement) {
+                    userIdElement.textContent = currentUserId;
+                }
+                
+                // Обновляем URL с полученным ID
+                updateUrlWithUserId(currentUserId);
+            } else {
+                console.warn('❌ ID пользователя не найден в initDataUnsafe');
             }
+        } else {
+            console.warn('⚠️ Telegram WebApp не доступен');
         }
     } catch (e) {
         console.warn('Telegram WebApp init error:', e);
     }
 
-    // fallback: user_id в query string
+    // 🔄 УЛУЧШЕННЫЙ FALLBACK: Ищем user_id в query string
     if (!currentUserId) {
         const urlParams = new URLSearchParams(window.location.search);
         const urlUserId = urlParams.get('user_id');
+        
         if (urlUserId) {
-            currentUserId = urlUserId;
+            currentUserId = String(urlUserId);
+            console.log('✅ ID пользователя получен из URL:', currentUserId);
+            
             if (userIdElement) userIdElement.textContent = currentUserId;
         }
     }
 
+    // 🔄 УЛУЧШЕННОЕ СООБЩЕНИЕ ОБ ОШИБКЕ
     if (!currentUserId) {
+        console.error('❌ Не удалось определить ID пользователя');
         showNotification('Ошибка: Не указан ID пользователя', 'error');
         if (userIdElement) userIdElement.textContent = 'не определен';
-        // всё равно инициализируем UI (пользователь может ввести id вручную в будущем)
+    } else {
+        console.log('🎉 ID пользователя установлен:', currentUserId);
     }
 
     // Делегирование удаления
@@ -80,6 +102,22 @@ document.addEventListener('DOMContentLoaded', () => {
         loadStatistics();
     }
 });
+
+// 🔄 НОВАЯ ФУНКЦИЯ: Обновляет URL с ID пользователя
+function updateUrlWithUserId(userId) {
+    try {
+        const url = new URL(window.location);
+        
+        // Устанавливаем параметр user_id
+        url.searchParams.set('user_id', userId);
+        
+        // Меняем URL без перезагрузки страницы
+        window.history.replaceState({}, '', url.toString());
+        console.log('🔗 URL обновлен с ID пользователя:', url.toString());
+    } catch (e) {
+        console.warn('Не удалось обновить URL:', e);
+    }
+}
 
 // --- Navigation bookmarks ---
 function setupBookmarks() {
