@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             // 4. Если user_id не найден
             console.error('❌ Не удалось определить user_id');
-            showNotification('Ошибка: Не указан user_id', 'error');
+            showNotification('Ошибка: Не указан user_id :(', 'error');
             if (userIdElement) {
                 userIdElement.textContent = 'не определен';
             }
