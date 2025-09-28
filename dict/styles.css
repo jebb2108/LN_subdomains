@@ -36,7 +36,7 @@ body {
 
 .book-header {
     background: #2e7d32;
-    color: white;
+    color: rgb(255, 255, 255);
     padding: 25px 30px;
     text-align: center;
 }

@@ -136,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentUserId = userId;
             if (userIdElement) {
                 userIdElement.textContent = currentUserId;
-                userIdElement.style.color = '#4CAF50'; // Зеленый цвет для успеха
+                userIdElement.style.color = 'rgba(255, 255, 255, 1)';
             }
             
             console.log('🎉 USER ID установлен:', currentUserId);
