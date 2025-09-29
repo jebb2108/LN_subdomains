@@ -55,13 +55,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
-            // Альтернативный способ: ищем в обычных query параметрах
-            const urlParams = new URLSearchParams(window.location.search);
-            const urlUserId = urlParams.get('user_id');
-            if (urlUserId) {
-                console.log('✅ USER ID из query параметров:', urlUserId);
-                return urlUserId;
-            }
+            // // Альтернативный способ: ищем в обычных query параметрах
+            // const urlParams = new URLSearchParams(window.location.search);
+            // const urlUserId = urlParams.get('user_id');
+            // if (urlUserId) {
+            //     console.log('✅ USER ID из query параметров:', urlUserId);
+            //     return urlUserId;
+            // }
             
         } catch (error) {
             console.error('❌ Ошибка при извлечении данных из URL:', error);
