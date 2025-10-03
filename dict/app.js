@@ -182,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeApp();
 });
 
-// --- Navigation bookmarks with improved carousel animation ---
+// --- Navigation bookmarks with smooth carousel animation ---
 function setupBookmarks() {
     const bookmarks = document.querySelectorAll('.bookmark');
     const sidebar = document.querySelector('.bookmarks-sidebar');
@@ -210,7 +210,7 @@ function setupBookmarks() {
             if (pageId === 'all-words') loadWords();
             if (pageId === 'statistics') loadStatistics();
             
-            // Анимация карусели с учетом мобильных устройств
+            // Плавная анимация карусели
             animateBookmarkCarousel(clickedBookmark, clickedIndex, allBookmarks, sidebar);
         });
     });
@@ -220,100 +220,101 @@ function animateBookmarkCarousel(clickedBookmark, clickedIndex, allBookmarks, si
     const isMobile = window.innerWidth <= 768;
     
     if (isMobile) {
-        // Мобильная анимация - горизонтальное перемещение влево
+        // Мобильная анимация - горизонтальная
         animateMobileCarousel(clickedBookmark, clickedIndex, allBookmarks, sidebar);
     } else {
-        // Десктопная анимация - вертикальное перемещение вверх
+        // Десктопная анимация - вертикальная
         animateDesktopCarousel(clickedBookmark, clickedIndex, allBookmarks, sidebar);
     }
 }
 
 function animateDesktopCarousel(clickedBookmark, clickedIndex, allBookmarks, sidebar) {
-    // Создаем новый порядок: все закладки выше кликнутой перемещаются в конец
     const bookmarksAbove = allBookmarks.slice(0, clickedIndex);
     const bookmarksBelow = allBookmarks.slice(clickedIndex + 1);
     
     // Новый порядок: кликнутая закладка + все ниже + все выше
     const newOrder = [clickedBookmark, ...bookmarksBelow, ...bookmarksAbove];
     
-    // Анимация: сначала скрываем все закладки выше кликнутой
-    bookmarksAbove.forEach((bookmark, index) => {
-        bookmark.style.transition = `transform 0.4s ease ${index * 0.05}s, opacity 0.4s ease ${index * 0.05}s`;
-        bookmark.style.transform = 'translateY(-20px)';
-        bookmark.style.opacity = '0';
+    // Помечаем все закладки как анимируемые
+    allBookmarks.forEach(bookmark => {
+        bookmark.classList.add('animating');
     });
     
-    // Анимируем сдвиг закладок ниже вверх
+    // Анимация для закладок выше - уходят вверх
+    bookmarksAbove.forEach((bookmark, index) => {
+        bookmark.style.transition = `transform 0.5s cubic-bezier(0.4, 0, 0.2, 1) ${index * 0.1}s, opacity 0.5s ease ${index * 0.1}s`;
+        bookmark.classList.add('desktop-slide-up');
+    });
+    
+    // Анимация для закладок ниже - сдвигаются вверх
     bookmarksBelow.forEach((bookmark, index) => {
-        bookmark.style.transition = `transform 0.4s ease ${(bookmarksAbove.length + index) * 0.05}s`;
+        const delay = (bookmarksAbove.length + index) * 0.1;
+        bookmark.style.transition = `transform 0.5s cubic-bezier(0.4, 0, 0.2, 1) ${delay}s`;
         bookmark.style.transform = `translateY(-${clickedBookmark.offsetHeight}px)`;
     });
     
-    // Анимируем кликнутую закладку наверх
-    clickedBookmark.style.transition = `transform 0.4s ease ${bookmarksAbove.length * 0.05}s`;
+    // Анимация для кликнутой закладки - поднимается наверх
+    clickedBookmark.style.transition = `transform 0.5s cubic-bezier(0.4, 0, 0.2, 1) ${bookmarksAbove.length * 0.1}s`;
     clickedBookmark.style.transform = `translateY(-${clickedIndex * clickedBookmark.offsetHeight}px)`;
     
-    // После завершения анимации перестраиваем DOM и сбрасываем стили
+    // После завершения анимации перестраиваем DOM
     setTimeout(() => {
-        // Перестраиваем DOM в новом порядке
         sidebar.innerHTML = '';
         newOrder.forEach(bookmark => {
-            // Сбрасываем стили перед добавлением
+            // Сбрасываем стили
             bookmark.style.transition = '';
             bookmark.style.transform = '';
             bookmark.style.opacity = '';
+            bookmark.classList.remove('animating', 'desktop-slide-up', 'desktop-slide-down');
             sidebar.appendChild(bookmark);
         });
-    }, 400 + Math.max(bookmarksAbove.length, bookmarksBelow.length) * 50);
+    }, 500 + Math.max(bookmarksAbove.length, bookmarksBelow.length) * 100);
 }
 
 function animateMobileCarousel(clickedBookmark, clickedIndex, allBookmarks, sidebar) {
-    // Создаем новый порядок: все закладки слева от кликнутой перемещаются в конец
     const bookmarksLeft = allBookmarks.slice(0, clickedIndex);
     const bookmarksRight = allBookmarks.slice(clickedIndex + 1);
     
     // Новый порядок: кликнутая закладка + все справа + все слева
     const newOrder = [clickedBookmark, ...bookmarksRight, ...bookmarksLeft];
     
-    // Сохраняем текущую ширину сайдбара для предотвращения изменения размера
-    const sidebarWidth = sidebar.offsetWidth;
-    sidebar.style.minWidth = `${sidebarWidth}px`;
-    
-    // Анимация: скрываем все закладки слева от кликнутой
-    bookmarksLeft.forEach((bookmark, index) => {
-        bookmark.style.transition = `transform 0.4s ease ${index * 0.05}s, opacity 0.4s ease ${index * 0.05}s`;
-        bookmark.style.transform = `translateX(-${bookmark.offsetWidth}px)`;
-        bookmark.style.opacity = '0';
+    // Помечаем все закладки как анимируемые
+    allBookmarks.forEach(bookmark => {
+        bookmark.classList.add('animating');
     });
     
-    // Анимируем сдвиг закладок справа влево
+    // Анимация для закладок слева - уходят влево
+    bookmarksLeft.forEach((bookmark, index) => {
+        bookmark.style.transition = `transform 0.5s cubic-bezier(0.4, 0, 0.2, 1) ${index * 0.1}s, opacity 0.5s ease ${index * 0.1}s`;
+        bookmark.classList.add('mobile-slide-left');
+    });
+    
+    // Анимация для закладок справа - сдвигаются влево
     bookmarksRight.forEach((bookmark, index) => {
-        bookmark.style.transition = `transform 0.4s ease ${(bookmarksLeft.length + index) * 0.05}s`;
+        const delay = (bookmarksLeft.length + index) * 0.1;
+        bookmark.style.transition = `transform 0.5s cubic-bezier(0.4, 0, 0.2, 1) ${delay}s`;
         bookmark.style.transform = `translateX(-${clickedBookmark.offsetWidth * clickedIndex}px)`;
     });
     
-    // Анимируем кликнутую закладку влево на позицию первой
-    clickedBookmark.style.transition = `transform 0.4s ease ${bookmarksLeft.length * 0.05}s`;
+    // Анимация для кликнутой закладки - сдвигается влево
+    clickedBookmark.style.transition = `transform 0.5s cubic-bezier(0.4, 0, 0.2, 1) ${bookmarksLeft.length * 0.1}s`;
     clickedBookmark.style.transform = `translateX(-${clickedBookmark.offsetWidth * clickedIndex}px)`;
     
-    // После завершения анимации перестраиваем DOM и сбрасываем стили
+    // После завершения анимации перестраиваем DOM
     setTimeout(() => {
-        // Перестраиваем DOM в новом порядке
         sidebar.innerHTML = '';
         newOrder.forEach(bookmark => {
-            // Сбрасываем стили перед добавлением
+            // Сбрасываем стили
             bookmark.style.transition = '';
             bookmark.style.transform = '';
             bookmark.style.opacity = '';
+            bookmark.classList.remove('animating', 'mobile-slide-left', 'mobile-slide-right');
             sidebar.appendChild(bookmark);
         });
         
-        // Сбрасываем фиксированную ширину
-        sidebar.style.minWidth = '';
-        
         // Прокручиваем к активной закладке
         clickedBookmark.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    }, 400 + Math.max(bookmarksLeft.length, bookmarksRight.length) * 50);
+    }, 500 + Math.max(bookmarksLeft.length, bookmarksRight.length) * 100);
 }
 
 // --- Helpers ---
