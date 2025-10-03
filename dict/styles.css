@@ -63,32 +63,8 @@ body {
     border-left: 1px solid #e8e0c9;
     padding: 20px 0;
     position: relative;
-}
-
-.bookmarks-hint {
-    position: absolute;
-    top: 50%;
-    left: -50px;
-    transform: translateY(-50%);
-    background: #2e7d32;
-    color: white;
-    padding: 10px;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    animation: pulse 2s infinite;
-    cursor: pointer;
-    z-index: 10;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
-}
-
-@keyframes pulse {
-    0% { transform: translateY(-50%) scale(1); }
-    50% { transform: translateY(-50%) scale(1.1); }
-    100% { transform: translateY(-50%) scale(1); }
+    flex-direction: column;
 }
 
 .bookmark {
@@ -102,6 +78,7 @@ body {
     align-items: center;
     gap: 15px;
     border-left: 4px solid transparent;
+    flex-shrink: 0;
 }
 
 .bookmark.active {
@@ -272,12 +249,35 @@ tr:hover { background-color: #f5f7f0; }
     margin-top: auto;
 }
 
+/* Mobile styles */
 @media (max-width: 768px) {
-    .book-container { flex-direction: column-reverse; }
-    .bookmarks-sidebar { width: 100%; display: flex; overflow-x: auto; padding: 0; border-left: none; border-top: 1px solid #e8e0c9; position: relative; }
-    .bookmarks-hint { display: none; }
-    .bookmark { padding: 15px 20px; border-left: none; border-bottom: 4px solid transparent; white-space: nowrap; flex-shrink: 0; }
-    .bookmark.active { border-left: none; border-bottom: 4px solid #2e7d32; }
+    .book-container { 
+        flex-direction: column-reverse; 
+        min-height: auto;
+    }
+    .bookmarks-sidebar { 
+        width: 100%; 
+        display: flex; 
+        flex-direction: row;
+        overflow-x: auto; 
+        padding: 0; 
+        border-left: none; 
+        border-top: 1px solid #e8e0c9; 
+        position: relative; 
+    }
+    .bookmark { 
+        padding: 15px 20px; 
+        border-left: none; 
+        border-bottom: 4px solid transparent; 
+        white-space: nowrap; 
+        flex-shrink: 0;
+        min-width: fit-content;
+    }
+    .bookmark.active { 
+        border-left: none; 
+        border-bottom: 4px solid #2e7d32; 
+    }
     .input-row { flex-direction: column; gap: 15px; }
     .book-title { font-size: 1.8rem; }
+    body { padding: 10px; }
 }

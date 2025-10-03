@@ -1,12 +1,9 @@
-// ====== app.js ======
-
 // DOM references (initialized on DOMContentLoaded)
 let userIdElement;
 let wordsListElement;
 let notificationElement;
 let loadingOverlay;
 let wordsLoading;
-let bookmarksHint;
 
 // state
 let currentUserId = null;
@@ -15,14 +12,12 @@ let currentUserId = null;
 const API_BASE_URL = window.location.origin || 'https://dict.lllang.site';
 
 // --- Init ---
-// --- Init ---
 document.addEventListener('DOMContentLoaded', () => {
     userIdElement = document.getElementById('userId');
     wordsListElement = document.getElementById('wordsList');
     notificationElement = document.getElementById('notification');
     loadingOverlay = document.getElementById('loadingOverlay');
     wordsLoading = document.getElementById('wordsLoading');
-    bookmarksHint = document.querySelector('.bookmarks-hint');
 
     // 🔄 УЛУЧШЕННАЯ ИНИЦИАЛИЗАЦИЯ С ИЗВЛЕЧЕНИЕМ ИЗ URL
     function initializeFromURL() {
@@ -54,15 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             }
-            
-            // // Альтернативный способ: ищем в обычных query параметрах
-            // const urlParams = new URLSearchParams(window.location.search);
-            // const urlUserId = urlParams.get('user_id');
-            // if (urlUserId) {
-            //     console.log('✅ USER ID из query параметров:', urlUserId);
-            //     return urlUserId;
-            // }
-            
         } catch (error) {
             console.error('❌ Ошибка при извлечении данных из URL:', error);
         }
@@ -153,7 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showNotification('Ошибка: Не удалось определить ID пользователя', 'error');
             if (userIdElement) {
                 userIdElement.textContent = 'не определен';
-                userIdElement.style.color = 'red';
+                userIdElement.style.color = 'white';
             }
         }
         
@@ -190,26 +176,32 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('addWordBtn')?.addEventListener('click', addWord);
         document.getElementById('searchBtn')?.addEventListener('click', findTranslation);
         document.getElementById('refreshWordsBtn')?.addEventListener('click', loadWords);
-
-        if (bookmarksHint) {
-            bookmarksHint.addEventListener('click', function() { 
-                this.style.display = 'none'; 
-            });
-        }
     }
 
     // Запускаем инициализацию
     initializeApp();
 });
 
-// --- Navigation bookmarks ---
+// --- Navigation bookmarks with improved carousel animation ---
 function setupBookmarks() {
     const bookmarks = document.querySelectorAll('.bookmark');
+    const sidebar = document.querySelector('.bookmarks-sidebar');
+    
     bookmarks.forEach(bookmark => {
         bookmark.addEventListener('click', function() {
+            // Если уже активна - ничего не делаем
+            if (this.classList.contains('active')) return;
+            
+            const clickedBookmark = this;
+            const allBookmarks = Array.from(sidebar.children);
+            const clickedIndex = allBookmarks.indexOf(clickedBookmark);
+            
+            // Убираем активность у всех
             bookmarks.forEach(b => b.classList.remove('active'));
+            // Добавляем активность текущей
             this.classList.add('active');
 
+            // Переключаем страницы
             document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
             const pageId = this.getAttribute('data-page');
             const pageElement = document.getElementById(pageId);
@@ -217,8 +209,109 @@ function setupBookmarks() {
 
             if (pageId === 'all-words') loadWords();
             if (pageId === 'statistics') loadStatistics();
+            
+            // Анимация карусели с учетом мобильных устройств
+            animateBookmarkCarousel(clickedBookmark, clickedIndex, allBookmarks, sidebar);
         });
     });
+}
+
+function animateBookmarkCarousel(clickedBookmark, clickedIndex, allBookmarks, sidebar) {
+    const isMobile = window.innerWidth <= 768;
+    
+    if (isMobile) {
+        // Мобильная анимация - горизонтальное перемещение влево
+        animateMobileCarousel(clickedBookmark, clickedIndex, allBookmarks, sidebar);
+    } else {
+        // Десктопная анимация - вертикальное перемещение вверх
+        animateDesktopCarousel(clickedBookmark, clickedIndex, allBookmarks, sidebar);
+    }
+}
+
+function animateDesktopCarousel(clickedBookmark, clickedIndex, allBookmarks, sidebar) {
+    // Создаем новый порядок: все закладки выше кликнутой перемещаются в конец
+    const bookmarksAbove = allBookmarks.slice(0, clickedIndex);
+    const bookmarksBelow = allBookmarks.slice(clickedIndex + 1);
+    
+    // Новый порядок: кликнутая закладка + все ниже + все выше
+    const newOrder = [clickedBookmark, ...bookmarksBelow, ...bookmarksAbove];
+    
+    // Анимация: сначала скрываем все закладки выше кликнутой
+    bookmarksAbove.forEach((bookmark, index) => {
+        bookmark.style.transition = `transform 0.4s ease ${index * 0.05}s, opacity 0.4s ease ${index * 0.05}s`;
+        bookmark.style.transform = 'translateY(-20px)';
+        bookmark.style.opacity = '0';
+    });
+    
+    // Анимируем сдвиг закладок ниже вверх
+    bookmarksBelow.forEach((bookmark, index) => {
+        bookmark.style.transition = `transform 0.4s ease ${(bookmarksAbove.length + index) * 0.05}s`;
+        bookmark.style.transform = `translateY(-${clickedBookmark.offsetHeight}px)`;
+    });
+    
+    // Анимируем кликнутую закладку наверх
+    clickedBookmark.style.transition = `transform 0.4s ease ${bookmarksAbove.length * 0.05}s`;
+    clickedBookmark.style.transform = `translateY(-${clickedIndex * clickedBookmark.offsetHeight}px)`;
+    
+    // После завершения анимации перестраиваем DOM и сбрасываем стили
+    setTimeout(() => {
+        // Перестраиваем DOM в новом порядке
+        sidebar.innerHTML = '';
+        newOrder.forEach(bookmark => {
+            // Сбрасываем стили перед добавлением
+            bookmark.style.transition = '';
+            bookmark.style.transform = '';
+            bookmark.style.opacity = '';
+            sidebar.appendChild(bookmark);
+        });
+    }, 400 + Math.max(bookmarksAbove.length, bookmarksBelow.length) * 50);
+}
+
+function animateMobileCarousel(clickedBookmark, clickedIndex, allBookmarks, sidebar) {
+    // Создаем новый порядок: все закладки слева от кликнутой перемещаются в конец
+    const bookmarksLeft = allBookmarks.slice(0, clickedIndex);
+    const bookmarksRight = allBookmarks.slice(clickedIndex + 1);
+    
+    // Новый порядок: кликнутая закладка + все справа + все слева
+    const newOrder = [clickedBookmark, ...bookmarksRight, ...bookmarksLeft];
+    
+    // Рассчитываем общую ширину закладок слева для правильного сдвига
+    const totalLeftWidth = bookmarksLeft.reduce((total, bookmark) => {
+        return total + bookmark.offsetWidth;
+    }, 0);
+    
+    // Анимация: скрываем все закладки слева от кликнутой
+    bookmarksLeft.forEach((bookmark, index) => {
+        bookmark.style.transition = `transform 0.4s ease ${index * 0.05}s, opacity 0.4s ease ${index * 0.05}s`;
+        bookmark.style.transform = `translateX(-${bookmark.offsetWidth}px)`;
+        bookmark.style.opacity = '0';
+    });
+    
+    // Анимируем сдвиг закладок справа влево
+    bookmarksRight.forEach((bookmark, index) => {
+        bookmark.style.transition = `transform 0.4s ease ${(bookmarksLeft.length + index) * 0.05}s`;
+        bookmark.style.transform = `translateX(-${totalLeftWidth}px)`;
+    });
+    
+    // Анимируем кликнутую закладку влево на позицию первой
+    clickedBookmark.style.transition = `transform 0.4s ease ${bookmarksLeft.length * 0.05}s`;
+    clickedBookmark.style.transform = `translateX(-${totalLeftWidth}px)`;
+    
+    // После завершения анимации перестраиваем DOM и сбрасываем стили
+    setTimeout(() => {
+        // Перестраиваем DOM в новом порядке
+        sidebar.innerHTML = '';
+        newOrder.forEach(bookmark => {
+            // Сбрасываем стили перед добавлением
+            bookmark.style.transition = '';
+            bookmark.style.transform = '';
+            bookmark.style.opacity = '';
+            sidebar.appendChild(bookmark);
+        });
+        
+        // Прокручиваем к активной закладке
+        clickedBookmark.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }, 400 + Math.max(bookmarksLeft.length, bookmarksRight.length) * 50);
 }
 
 // --- Helpers ---
