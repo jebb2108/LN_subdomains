@@ -93,7 +93,11 @@ body {
     color: #2e7d32;
 }
 
-.bookmark i { font-size: 1.3rem; width: 25px; text-align: center; }
+.bookmark i { 
+    font-size: 1.3rem; 
+    width: 25px; 
+    text-align: center; 
+}
 
 /* Pages */
 .page {
@@ -161,10 +165,22 @@ input:focus, select:focus {
     gap: 10px;
 }
 
-.btn:hover { background: #388e3c; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,100,0,0.1); }
+.btn:hover { 
+    background: #388e3c; 
+    transform: translateY(-2px); 
+    box-shadow: 0 5px 15px rgba(0,100,0,0.1); 
+}
+
 .btn-secondary { background: #5a6268; }
 
-#searchResult { margin-top: 25px; padding: 25px; background: #f8f9f5; border-radius: 8px; border-left: 4px solid #2e7d32; display: none; }
+#searchResult { 
+    margin-top: 25px; 
+    padding: 25px; 
+    background: #f8f9f5; 
+    border-radius: 8px; 
+    border-left: 4px solid #2e7d32; 
+    display: none; 
+}
 
 .result-card {
     background: white;
@@ -184,7 +200,12 @@ input:focus, select:focus {
 
 table { width: 100%; border-collapse: collapse; }
 th, td { border-bottom: 1px solid #f0ede3; padding: 15px; text-align: left; }
-th { background: #e8f5e9; color: #2e7d32; position: sticky; top: 0; }
+th { 
+    background: #e8f5e9; 
+    color: #2e7d32; 
+    position: sticky; 
+    top: 0; 
+}
 tr:nth-child(even) { background-color: #fcfcf8; }
 tr:hover { background-color: #f5f7f0; }
 
@@ -220,7 +241,10 @@ tr:hover { background-color: #f5f7f0; }
 
 .loading-overlay {
     position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
+    top: 0; 
+    left: 0; 
+    right: 0; 
+    bottom: 0;
     background: rgba(255,255,255,0.8);
     display: flex;
     justify-content: center;
@@ -234,10 +258,13 @@ tr:hover { background-color: #f5f7f0; }
     border: 4px solid rgba(0,0,0,0.1);
     border-left-color: #2e7d32;
     border-radius: 50%;
-    width: 40px; height: 40px;
+    width: 40px; 
+    height: 40px;
     animation: spin 1s linear infinite;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin { 
+    to { transform: rotate(360deg); } 
+}
 
 .book-footer {
     text-align: center;
@@ -264,6 +291,12 @@ tr:hover { background-color: #f5f7f0; }
         border-left: none; 
         border-top: 1px solid #e8e0c9; 
         position: relative; 
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .bookmarks-sidebar::-webkit-scrollbar {
+        display: none;
     }
     .bookmark { 
         padding: 15px 20px; 

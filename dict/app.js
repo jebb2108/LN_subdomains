@@ -139,7 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showNotification('Ошибка: Не удалось определить ID пользователя', 'error');
             if (userIdElement) {
                 userIdElement.textContent = 'не определен';
-                userIdElement.style.color = 'white';
+                userIdElement.style.color = 'red';
             }
         }
         
@@ -275,10 +275,9 @@ function animateMobileCarousel(clickedBookmark, clickedIndex, allBookmarks, side
     // Новый порядок: кликнутая закладка + все справа + все слева
     const newOrder = [clickedBookmark, ...bookmarksRight, ...bookmarksLeft];
     
-    // Рассчитываем общую ширину закладок слева для правильного сдвига
-    const totalLeftWidth = bookmarksLeft.reduce((total, bookmark) => {
-        return total + bookmark.offsetWidth;
-    }, 0);
+    // Сохраняем текущую ширину сайдбара для предотвращения изменения размера
+    const sidebarWidth = sidebar.offsetWidth;
+    sidebar.style.minWidth = `${sidebarWidth}px`;
     
     // Анимация: скрываем все закладки слева от кликнутой
     bookmarksLeft.forEach((bookmark, index) => {
@@ -290,12 +289,12 @@ function animateMobileCarousel(clickedBookmark, clickedIndex, allBookmarks, side
     // Анимируем сдвиг закладок справа влево
     bookmarksRight.forEach((bookmark, index) => {
         bookmark.style.transition = `transform 0.4s ease ${(bookmarksLeft.length + index) * 0.05}s`;
-        bookmark.style.transform = `translateX(-${totalLeftWidth}px)`;
+        bookmark.style.transform = `translateX(-${clickedBookmark.offsetWidth * clickedIndex}px)`;
     });
     
     // Анимируем кликнутую закладку влево на позицию первой
     clickedBookmark.style.transition = `transform 0.4s ease ${bookmarksLeft.length * 0.05}s`;
-    clickedBookmark.style.transform = `translateX(-${totalLeftWidth}px)`;
+    clickedBookmark.style.transform = `translateX(-${clickedBookmark.offsetWidth * clickedIndex}px)`;
     
     // После завершения анимации перестраиваем DOM и сбрасываем стили
     setTimeout(() => {
@@ -308,6 +307,9 @@ function animateMobileCarousel(clickedBookmark, clickedIndex, allBookmarks, side
             bookmark.style.opacity = '';
             sidebar.appendChild(bookmark);
         });
+        
+        // Сбрасываем фиксированную ширину
+        sidebar.style.minWidth = '';
         
         // Прокручиваем к активной закладке
         clickedBookmark.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
