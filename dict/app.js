@@ -610,7 +610,7 @@ async function addWord() {
     const isPublic = isPublicToggle ? isPublicToggle.checked : false;
 
     if (!partOfSpeech){
-        showNotification('Пожалуйста, выберете часть речи');
+        showNotification('Пожалуйста, выберете часть речи', 'error');
         return;
     }
 
