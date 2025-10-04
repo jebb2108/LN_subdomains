@@ -141,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showNotification('Ошибка: Не удалось определить ID пользователя', 'error');
             if (userIdElement) {
                 userIdElement.textContent = 'не определен';
-                userIdElement.style.color = 'red';
+                userIdElement.style.color = 'white';
             }
         }
         
@@ -187,16 +187,35 @@ document.addEventListener('DOMContentLoaded', () => {
         const partOfSpeechDisplay = document.getElementById('partOfSpeechDisplay');
         const partOfSpeechSelect = document.getElementById('partOfSpeech');
         const options = Array.from(partOfSpeechSelect.options);
-        let currentIndex = 0;
+    
+        // Находим опцию с подсказкой (первая опция с пустым value)
+        const hintOption = options.find(opt => opt.value === '');
+        const speechOptions = options.filter(opt => opt.value !== ''); // Только реальные части речи
+    
+        let isHintMode = true;
 
         if (partOfSpeechDisplay) {
+            // Устанавливаем начальную подсказку
+            partOfSpeechDisplay.querySelector('span').textContent = hintOption.text;
+            partOfSpeechSelect.value = hintOption.value;
+
             partOfSpeechDisplay.addEventListener('click', function() {
-                currentIndex = (currentIndex + 1) % options.length;
-                const selectedOption = options[currentIndex];
-                
+                let selectedOption;
+            
+                if (isHintMode) {
+                    // Первый клик - переходим к первой реальной части речи
+                    selectedOption = speechOptions[0];
+                    isHintMode = false;
+                } else {
+                    // Последующие клики - циклически перебираем реальные части речи
+                    const currentIndex = speechOptions.findIndex(opt => opt.value === partOfSpeechSelect.value);
+                    const nextIndex = (currentIndex + 1) % speechOptions.length;
+                    selectedOption = speechOptions[nextIndex];
+                }
+            
                 partOfSpeechDisplay.querySelector('span').textContent = selectedOption.text;
                 partOfSpeechSelect.value = selectedOption.value;
-                
+            
                 this.classList.add('active');
                 setTimeout(() => {
                     this.classList.remove('active');
