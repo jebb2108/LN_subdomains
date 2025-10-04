@@ -334,22 +334,9 @@ tr:hover {
     transition: all 0.3s ease;
 }
 
-.voice-record-btn i {
-    font-size: 1rem;
-    color: #5a5a5a;
-    transition: all 0.3s ease;
-}
-
-.voice-record-btn.active i {
-    color: #f44336;
-}
-
-.voice-record-btn:hover {
-    background: rgba(0,0,0,0.05);
-}
-
 .privacy-btn-container {
     margin-bottom: 8px;
+    transform: translateY(12px);
 }
 
 .privacy-btn {
@@ -515,5 +502,9 @@ textarea {
     .privacy-btn-container {
         margin-bottom: 8px;
         flex-shrink: 0;
+        /* Добавляем выравнивание по центру по вертикали */
+        align-items: center;
+        justify-content: center;
+        transform: translateY(12px);
     }
 }
