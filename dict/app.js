@@ -609,6 +609,10 @@ async function addWord() {
     const context = contextInput ? contextInput.value.trim() : '';
     const isPublic = isPublicToggle ? isPublicToggle.checked : false;
 
+    if (!partOfSpeech){
+        showNotification('Пожалуйста, выберете часть речи');
+    }
+
     if (!word || !translation) {
         showNotification('Пожалуйста, заполните все обязательные поля', 'error');
         return;
