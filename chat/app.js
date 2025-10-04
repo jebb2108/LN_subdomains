@@ -102,7 +102,7 @@ function addMessageToChat(messageData, isMyMessage = false) {
     messageDiv.className = `message ${isMyMessage ? 'my-message' : 'other-message'}`;
 
     // Форматируем время
-    const messageTime = new Date(messageData.timestamp).toLocaleTimeString([], {
+    const messageTime = new Date(messageData.created_at).toLocaleTimeString([], {
         hour: '2-digit',
         minute: '2-digit'
     });

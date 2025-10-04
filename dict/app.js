@@ -7,6 +7,8 @@ let wordsLoading;
 
 // state
 let currentUserId = null;
+let isRecording = false;
+let recognition = null;
 
 // API base — используем origin текущей страницы (чтобы не было CORS проблем при том же хосте)
 const API_BASE_URL = window.location.origin || 'https://dict.lllang.site';
@@ -145,6 +147,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Инициализируем остальные компоненты
         setupEventListeners();
+        initializeCustomComponents();
+        initializeVoiceRecognition();
     }
 
     // 🔄 ФУНКЦИЯ ОБНОВЛЕНИЯ URL
@@ -176,6 +180,117 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('addWordBtn')?.addEventListener('click', addWord);
         document.getElementById('searchBtn')?.addEventListener('click', findTranslation);
         document.getElementById('refreshWordsBtn')?.addEventListener('click', loadWords);
+    }
+
+    // 🔄 ИНИЦИАЛИЗАЦИЯ КАСТОМНЫХ КОМПОНЕНТОВ
+    function initializeCustomComponents() {
+        const partOfSpeechDisplay = document.getElementById('partOfSpeechDisplay');
+        const partOfSpeechSelect = document.getElementById('partOfSpeech');
+        const options = Array.from(partOfSpeechSelect.options);
+        let currentIndex = 0;
+
+        if (partOfSpeechDisplay) {
+            partOfSpeechDisplay.addEventListener('click', function() {
+                currentIndex = (currentIndex + 1) % options.length;
+                const selectedOption = options[currentIndex];
+                
+                partOfSpeechDisplay.querySelector('span').textContent = selectedOption.text;
+                partOfSpeechSelect.value = selectedOption.value;
+                
+                this.classList.add('active');
+                setTimeout(() => {
+                    this.classList.remove('active');
+                }, 300);
+            });
+        }
+
+        // Обработчик для кнопки приватности
+        const wordPublic = document.getElementById('wordPublic');
+        if (wordPublic) {
+            wordPublic.addEventListener('change', function() {
+                const privacyBtn = this.closest('.privacy-btn');
+                if (this.checked) {
+                    privacyBtn.title = 'Публичное слово (видят все)';
+                    showNotification('Слово будет публичным', 'success');
+                } else {
+                    privacyBtn.title = 'Приватное слово (только для вас)';
+                    showNotification('Слово будет приватным', 'success');
+                }
+                console.log('Word visibility:', this.checked ? 'public' : 'private');
+            });
+        }
+    }
+
+    // 🔄 ИНИЦИАЛИЗАЦИЯ ГОЛОСОВОГО ВВОДА
+    function initializeVoiceRecognition() {
+        const voiceRecordBtn = document.getElementById('voiceRecordBtn');
+        if (!voiceRecordBtn) return;
+
+        // Проверяем поддержку браузером
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            voiceRecordBtn.style.display = 'none';
+            showNotification('Голосовой ввод не поддерживается вашим браузером', 'error');
+            return;
+        }
+
+        // Создаем экземпляр распознавания речи
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US'; // Распознаем английскую речь
+
+        voiceRecordBtn.addEventListener('click', toggleVoiceRecording);
+        
+        recognition.onstart = function() {
+            isRecording = true;
+            voiceRecordBtn.classList.add('active');
+            voiceRecordBtn.innerHTML = '<i class="fas fa-stop"></i>';
+            showNotification('Говорите сейчас...', 'success');
+        };
+
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript;
+            const wordInput = document.getElementById('newWord');
+            if (wordInput) {
+                wordInput.value = transcript;
+                showNotification(`Распознано: "${transcript}"`, 'success');
+            }
+        };
+
+        recognition.onerror = function(event) {
+            console.error('Speech recognition error:', event.error);
+            let errorMessage = 'Ошибка распознавания речи';
+            if (event.error === 'not-allowed') {
+                errorMessage = 'Разрешите доступ к микрофону';
+            } else if (event.error === 'audio-capture') {
+                errorMessage = 'Микрофон не найден';
+            }
+            showNotification(errorMessage, 'error');
+        };
+
+        recognition.onend = function() {
+            isRecording = false;
+            voiceRecordBtn.classList.remove('active');
+            voiceRecordBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+        };
+    }
+
+    // 🔄 ПЕРЕКЛЮЧЕНИЕ РЕЖИМА ЗАПИСИ ГОЛОСА
+    function toggleVoiceRecording() {
+        if (!recognition) return;
+        
+        if (isRecording) {
+            recognition.stop();
+        } else {
+            try {
+                recognition.start();
+            } catch (error) {
+                console.error('Error starting speech recognition:', error);
+                showNotification('Ошибка запуска записи', 'error');
+            }
+        }
     }
 
     // Запускаем инициализацию
@@ -460,15 +575,20 @@ async function loadStatistics() {
 async function addWord() {
     const wordInput = document.getElementById('newWord');
     const translationInput = document.getElementById('translation');
-    const posEl = document.getElementById('partOfSpeech');
-    if (!wordInput || !translationInput || !posEl) return;
+    const partOfSpeechSelect = document.getElementById('partOfSpeech');
+    const contextInput = document.getElementById('context');
+    const isPublicToggle = document.getElementById('wordPublic');
+    
+    if (!wordInput || !translationInput || !partOfSpeechSelect) return;
 
     const word = wordInput.value.trim();
     const translation = translationInput.value.trim();
-    const partOfSpeech = posEl.value;
+    const partOfSpeech = partOfSpeechSelect.value;
+    const context = contextInput ? contextInput.value.trim() : '';
+    const isPublic = isPublicToggle ? isPublicToggle.checked : false;
 
     if (!word || !translation) {
-        showNotification('Пожалуйста, заполните все поля', 'error');
+        showNotification('Пожалуйста, заполните все обязательные поля', 'error');
         return;
     }
 
@@ -477,7 +597,14 @@ async function addWord() {
         return;
     }
 
-    const payload = { user_id: currentUserId, word: word.toLowerCase(), part_of_speech: partOfSpeech, translation };
+    const payload = { 
+        user_id: currentUserId, 
+        word: word.toLowerCase(), 
+        part_of_speech: partOfSpeech, 
+        translation,
+        is_public: isPublic,
+        context: context
+    };
     const url = `${API_BASE_URL}/api/words`;
 
     try {
@@ -503,6 +630,19 @@ async function addWord() {
         // success
         wordInput.value = '';
         translationInput.value = '';
+        if (contextInput) contextInput.value = '';
+        if (isPublicToggle) isPublicToggle.checked = false;
+        
+        // Останавливаем запись голоса если активна
+        const voiceRecordBtn = document.getElementById('voiceRecordBtn');
+        if (voiceRecordBtn && voiceRecordBtn.classList.contains('active')) {
+            voiceRecordBtn.classList.remove('active');
+            voiceRecordBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+            if (recognition) {
+                recognition.stop();
+            }
+        }
+        
         showNotification(`Слово "${escapeHTML(word)}" добавлено!`, 'success');
 
         const activePage = document.querySelector('.page.active');

@@ -4,40 +4,39 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Словарь Telegram-бота</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
     <div class="book-container">
         <div class="content-area">
-            <header class="book-header" role="banner">
+            <header class="book-header">
                 <div class="book-title"><i class="fas fa-book"></i> Мой словарь</div>
                 <div class="user-info">Пользователь ID: <span id="userId">загрузка...</span></div>
             </header>
 
-            <div class="loading-overlay" id="loadingOverlay" aria-hidden="true">
-                <div class="spinner" aria-hidden="true"></div>
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="spinner"></div>
             </div>
 
             <!-- ADD WORD -->
-            <section id="add-word" class="page active" aria-labelledby="add-word-title">
-                <h2 id="add-word-title" class="page-title"><i class="fas fa-plus-circle"></i> Добавить новое слово</h2>
-
+            <section id="add-word" class="page active">
                 <div class="form-group">
-                    <div class="input-row">
+                    <div class="word-input-container">
                         <div class="input-group">
                             <label for="newWord"><i class="fas fa-font"></i> Слово (англ.)</label>
-                            <input type="text" id="newWord" placeholder="Введите слово" autocomplete="off" />
+                            <div class="input-with-voice">
+                                <input type="text" id="newWord" placeholder="Введите слово" autocomplete="off" />
+                                <button type="button" id="voiceRecordBtn" class="voice-record-btn">
+                                    <i class="fas fa-microphone"></i>
+                                </button>
+                            </div>
                         </div>
-                        <div class="input-group">
-                            <label for="partOfSpeech"><i class="fas fa-tag"></i> Часть речи</label>
-                            <select id="partOfSpeech">
-                                <option value="noun">Существительное</option>
-                                <option value="verb">Глагол</option>
-                                <option value="adjective">Прилагательное</option>
-                                <option value="adverb">Наречие</option>
-                                <option value="other">Другое</option>
-                            </select>
+                        <div class="privacy-btn-container">
+                            <label class="privacy-btn">
+                                <input type="checkbox" id="wordPublic">
+                                <i class="fas fa-globe"></i>
+                            </label>
                         </div>
                     </div>
                 </div>
@@ -47,12 +46,39 @@
                     <input type="text" id="translation" placeholder="Введите перевод" autocomplete="off" />
                 </div>
 
-                <button class="btn" id="addWordBtn"><i class="fas fa-plus"></i> Добавить в словарь</button>
+                <div class="form-group">
+                    <div class="custom-select">
+                        <label><i class="fas fa-tag"></i> Часть речи</label>
+                        <div class="select-display" id="partOfSpeechDisplay">
+                            <span>Существительное</span>
+                            <i class="fas fa-chevron-right"></i>
+                        </div>
+                        <select id="partOfSpeech" style="display: none;">
+                            <option value="noun">Существительное</option>
+                            <option value="verb">Глагол</option>
+                            <option value="adjective">Прилагательное</option>
+                            <option value="adverb">Наречие</option>
+                            <option value="other">Другое</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group context-group">
+                    <label for="context">
+                        <i class="fas fa-comment"></i> Контекст 
+                        <span class="optional-text">(необязательно)</span>
+                    </label>
+                    <textarea id="context" placeholder="Введите контекст использования слова" rows="4"></textarea>
+                </div>
+
+                <div class="add-button-container">
+                    <button class="btn" id="addWordBtn"><i class="fas fa-plus"></i> Добавить в словарь</button>
+                </div>
             </section>
 
             <!-- SEARCH -->
-            <section id="search-word" class="page" aria-labelledby="search-word-title">
-                <h2 id="search-word-title" class="page-title"><i class="fas fa-search"></i> Поиск перевода</h2>
+            <section id="search-word" class="page">
+                <h2 class="page-title"><i class="fas fa-search"></i> Поиск перевода</h2>
                 <div class="input-row">
                     <div class="input-group" style="flex: 3;">
                         <input type="text" id="searchWord" placeholder="Введите слово для поиска" autocomplete="off" />
@@ -60,7 +86,7 @@
                     <button class="btn" id="searchBtn" style="flex: 1;"><i class="fas fa-search"></i> Найти</button>
                 </div>
 
-                <div id="searchResult" aria-live="polite" style="display: none;">
+                <div id="searchResult" style="display: none;">
                     <div class="result-card">
                         <h3>Результат поиска</h3>
                         <div class="word-info">
@@ -73,19 +99,19 @@
             </section>
 
             <!-- ALL WORDS -->
-            <section id="all-words" class="page" aria-labelledby="all-words-title">
-                <h2 id="all-words-title" class="page-title"><i class="fas fa-book-open"></i> Весь словарь</h2>
+            <section id="all-words" class="page">
+                <h2 class="page-title"><i class="fas fa-book-open"></i> Весь словарь</h2>
                 <button class="btn btn-secondary" id="refreshWordsBtn"><i class="fas fa-sync"></i> Обновить список</button>
 
-                <div class="table-container" id="wordsTableContainer" role="region" aria-label="Список слов">
-                    <div class="loading-overlay" id="wordsLoading" aria-hidden="true"><div class="spinner" aria-hidden="true"></div></div>
-                    <table id="wordsTable" role="table" aria-labelledby="all-words-title">
+                <div class="table-container" id="wordsTableContainer">
+                    <div class="loading-overlay" id="wordsLoading"><div class="spinner"></div></div>
+                    <table id="wordsTable">
                         <thead>
                             <tr>
-                                <th scope="col">Слово</th>
-                                <th scope="col">Часть речи</th>
-                                <th scope="col">Перевод</th>
-                                <th scope="col">Действия</th>
+                                <th>Слово</th>
+                                <th>Часть речи</th>
+                                <th>Перевод</th>
+                                <th>Действия</th>
                             </tr>
                         </thead>
                         <tbody id="wordsList"></tbody>
@@ -94,8 +120,8 @@
             </section>
 
             <!-- INSTRUCTIONS -->
-            <section id="instructions" class="page" aria-labelledby="instructions-title">
-                <h2 id="instructions-title" class="page-title"><i class="fas fa-info-circle"></i> Инструкция</h2>
+            <section id="instructions" class="page">
+                <h2 class="page-title"><i class="fas fa-info-circle"></i> Инструкция</h2>
                 <div class="result-card">
                     <h3>Как пользоваться</h3>
                     <ol>
@@ -108,20 +134,20 @@
             </section>
 
             <!-- STATISTICS -->
-            <section id="statistics" class="page" aria-labelledby="statistics-title">
-                <h2 id="statistics-title" class="page-title"><i class="fas fa-chart-bar"></i> Статистика</h2>
+            <section id="statistics" class="page">
+                <h2 class="page-title"><i class="fas fa-chart-bar"></i> Статистика</h2>
                 <div class="result-card">
                     <h3>Ваша статистика</h3>
                     <div id="statsContent" style="text-align:center; padding:20px;">Загрузка статистики...</div>
                 </div>
             </section>
 
-            <footer class="book-footer" role="contentinfo">
+            <footer class="book-footer">
                 <p>Telegram Vocabulary Bot &copy; 2025 | Словарь знаний</p>
             </footer>
         </div>
 
-        <aside class="bookmarks-sidebar" aria-label="Навигация">
+        <aside class="bookmarks-sidebar">
             <div class="bookmark active" data-page="add-word"><i class="fas fa-plus-circle"></i> Добавить слово</div>
             <div class="bookmark" data-page="search-word"><i class="fas fa-search"></i> Поиск слова</div>
             <div class="bookmark" data-page="all-words"><i class="fas fa-book-open"></i> Весь словарь</div>
@@ -130,15 +156,7 @@
         </aside>
     </div>
 
-    <div class="notification" id="notification" role="status" aria-live="polite"></div>
-    <script>
-        if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(regs => {
-            regs.forEach(r => r.unregister());
-        });
-        }
-    </script>
-
+    <div class="notification" id="notification"></div>
     <script src="app.js"></script>
 </body>
 </html>
