@@ -270,11 +270,18 @@ document.addEventListener('DOMContentLoaded', () => {
             showNotification(errorMessage, 'error');
         };
 
+        // В функции initializeVoiceRecognition обновляем onend:
         recognition.onend = function() {
+        // Дублируем остановку на случай, если запись закончилась сама
+        if (isRecording) {
             isRecording = false;
-            voiceRecordBtn.classList.remove('active');
-            voiceRecordBtn.innerHTML = '<i class="fas fa-microphone"></i>';
-        };
+            const voiceRecordBtn = document.getElementById('voiceRecordBtn');
+            if (voiceRecordBtn) {
+                voiceRecordBtn.classList.remove('active');
+                voiceRecordBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+            }
+        }
+};
     }
 
     // 🔄 ПЕРЕКЛЮЧЕНИЕ РЕЖИМА ЗАПИСИ ГОЛОСА
@@ -282,6 +289,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!recognition) return;
         
         if (isRecording) {
+            isRecording = false
+            const voiceRecordBtn = document.getElementById('voiceRecordBtn');
+            if (voiceRecordBtn) {
+                voiceRecordBtn.classList.remove('active');
+                voiceRecordBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+            }
             recognition.stop();
         } else {
             try {
@@ -637,7 +650,9 @@ async function addWord() {
         const voiceRecordBtn = document.getElementById('voiceRecordBtn');
         if (voiceRecordBtn && voiceRecordBtn.classList.contains('active')) {
             voiceRecordBtn.classList.remove('active');
-            voiceRecordBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+            const icon = voiceRecordBtn.querySelector('i');
+            icon.classList.remove('fa-stop');
+            icon.classList.add('fa-microphone');
             if (recognition) {
                 recognition.stop();
             }

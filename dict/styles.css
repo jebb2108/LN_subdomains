@@ -321,6 +321,7 @@ tr:hover {
     flex: 1;
 }
 
+/* Стили для кнопки записи голоса */
 .voice-record-btn {
     position: absolute;
     right: 10px;
@@ -329,9 +330,56 @@ tr:hover {
     background: none;
     border: none;
     cursor: pointer;
-    padding: 8px;
+    padding: 6px;
     border-radius: 4px;
     transition: all 0.3s ease;
+    color: #5a5a5a;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.voice-record-btn:hover {
+    color: #2e7d32;
+}
+
+/* ПУЛЬСИРУЮЩИЙ КРАСНЫЙ КВАДРАТИК БЕЗ ФОНА */
+.voice-record-btn.active {
+    background: none !important;
+    color: #ff0000 !important;
+    animation: pulse-scale 0.6s ease-in-out infinite alternate;
+}
+
+/* Анимация пульсации - увеличение и уменьшение */
+@keyframes pulse-scale {
+    0% { 
+        transform: translateY(-50%) scale(1);
+    }
+    100% { 
+        transform: translateY(-50%) scale(1.1);
+    }
+}
+
+/* Дополнительно: стили для иконки внутри кнопки */
+.voice-record-btn i {
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+}
+
+/* Адаптация для мобильных */
+@media (max-width: 768px) {
+    .voice-record-btn {
+        padding: 8px;
+        right: 8px;
+        width: 34px;
+        height: 34px;
+    }
+    
+    .voice-record-btn i {
+        font-size: 1.2rem;
+    }
 }
 
 .privacy-btn-container {
