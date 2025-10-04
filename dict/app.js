@@ -611,6 +611,7 @@ async function addWord() {
 
     if (!partOfSpeech){
         showNotification('Пожалуйста, выберете часть речи');
+        return;
     }
 
     if (!word || !translation) {
