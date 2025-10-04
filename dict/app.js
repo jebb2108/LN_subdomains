@@ -1,5 +1,4 @@
 // DOM references (initialized on DOMContentLoaded)
-let userIdElement;
 let wordsListElement;
 let notificationElement;
 let loadingOverlay;
@@ -110,28 +109,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // 🔄 ОСНОВНАЯ ФУНКЦИЯ ИНИЦИАЛИЗАЦИИ
     async function initializeApp() {
         let userId = null;
-        
+    
         // 1. Пробуем загрузить Telegram WebApp
         userId = await loadTelegramWebApp();
-        
+    
         // 2. Если не получилось, извлекаем из URL
         if (!userId) {
             userId = initializeFromURL();
         }
-        
+    
         // 3. Устанавливаем user_id
         if (userId) {
             currentUserId = userId;
-            if (userIdElement) {
-                userIdElement.textContent = currentUserId;
-                userIdElement.style.color = 'rgba(255, 255, 255, 1)';
-            }
-            
             console.log('🎉 USER ID установлен:', currentUserId);
-            
+        
             // Обновляем URL
             updateUrlWithUserId(currentUserId);
-            
+        
             // Загружаем данные
             loadWords();
             loadStatistics();
@@ -139,17 +133,13 @@ document.addEventListener('DOMContentLoaded', () => {
             // 4. Если user_id не найден
             console.error('❌ Не удалось определить user_id');
             showNotification('Ошибка: Не удалось определить ID пользователя', 'error');
-            if (userIdElement) {
-                userIdElement.textContent = 'не определен';
-                userIdElement.style.color = 'white';
-            }
         }
-        
+    
         // Инициализируем остальные компоненты
         setupEventListeners();
         initializeCustomComponents();
         initializeVoiceRecognition();
-    }
+}
 
     // 🔄 ФУНКЦИЯ ОБНОВЛЕНИЯ URL
     function updateUrlWithUserId(userId) {
