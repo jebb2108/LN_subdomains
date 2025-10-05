@@ -100,9 +100,6 @@
 
             <!-- ALL WORDS -->
             <section id="all-words" class="page">
-                <h2 class="page-title"><i class="fas fa-book-open"></i> Весь словарь</h2>
-                <button class="btn btn-secondary" id="refreshWordsBtn"><i class="fas fa-sync"></i> Обновить список</button>
-
                 <div class="card-container" id="wordsCardContainer">
                     <div class="loading-overlay" id="wordsLoading"><div class="spinner"></div></div>
         
@@ -137,33 +134,23 @@
                         </div>
                     </div>
         
+                    <!-- Новая кнопка удаления под карточкой -->
+                    <button class="delete-word-btn" id="deleteCardBtn" style="display: none;">
+                       <i class="fas fa-trash"></i> Удалить из словаря
+                    </button>
+        
                     <div class="empty-state" id="emptyState" style="display: none;">
                         <div class="empty-icon">
                             <i class="fas fa-book-open"></i>
                         </div>
-                        <h3>Словарь пуст</h3>
-                        <p>Начните добавлять слова в свой словарь!</p>
+                        <h3>У вас пока нет слов в словаре</h3>
+                        <p>Добавьте первое слово на вкладке "Добавить слово"</p>
                     </div>
-                </div>
-            </section>
-
-            <!-- INSTRUCTIONS -->
-            <section id="instructions" class="page">
-                <h2 class="page-title"><i class="fas fa-info-circle"></i> Инструкция</h2>
-                <div class="result-card">
-                    <h3>Как пользоваться</h3>
-                    <ol>
-                        <li><strong>Добавление:</strong> вкладка "Добавить слово" → заполните поля → нажмите "Добавить".</li>
-                        <li><strong>Поиск:</strong> вкладка "Поиск слова".</li>
-                        <li><strong>Словарь:</strong> вкладка "Весь словарь".</li>
-                        <li><strong>Удаление:</strong> кнопка "Удалить" рядом со словом.</li>
-                    </ol>
                 </div>
             </section>
 
             <!-- STATISTICS -->
             <section id="statistics" class="page">
-                <h2 class="page-title"><i class="fas fa-chart-bar"></i> Статистика</h2>
                 <div class="result-card">
                     <h3>Ваша статистика</h3>
                     <div id="statsContent" style="text-align:center; padding:20px;">Загрузка статистики...</div>
@@ -175,7 +162,6 @@
             <div class="bookmark active" data-page="add-word"><i class="fas fa-plus-circle"></i> Добавить слово</div>
             <div class="bookmark" data-page="search-word"><i class="fas fa-search"></i> Поиск слова</div>
             <div class="bookmark" data-page="all-words"><i class="fas fa-book-open"></i> Весь словарь</div>
-            <div class="bookmark" data-page="instructions"><i class="fas fa-info-circle"></i> Инструкция</div>
             <div class="bookmark" data-page="statistics"><i class="fas fa-chart-bar"></i> Статистика</div>
         </aside>
     </div>

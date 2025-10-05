@@ -106,9 +106,11 @@ function displayCurrentCard() {
     const wordCard = document.getElementById('wordCard');
     const emptyState = document.getElementById('emptyState');
     const cardCounter = document.getElementById('cardCounter');
+    const deleteCardBtn = document.getElementById('deleteCardBtn');
     
     if (currentWords.length === 0) {
         wordCard.style.display = 'none';
+        if (deleteCardBtn) deleteCardBtn.style.display = 'none';
         emptyState.style.display = 'block';
         return;
     }
@@ -122,6 +124,12 @@ function displayCurrentCard() {
     document.getElementById('cardWord').textContent = currentWord.word || '';
     document.getElementById('cardTranslation').textContent = currentWord.translation || '';
     document.getElementById('cardPos').textContent = getPartOfSpeechName(currentWord.part_of_speech || '');
+    
+    // Устанавливаем ID слова для кнопки удаления и показываем ее
+    if (deleteCardBtn && currentWord.id) {
+        deleteCardBtn.setAttribute('data-word-id', currentWord.id);
+        deleteCardBtn.style.display = 'flex';
+    }
     
     // Контекст
     const contextContainer = document.getElementById('cardContextContainer');
@@ -432,6 +440,7 @@ function setupBookmarks() {
 
             // Переключаем страницы
             document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+
             const pageId = this.getAttribute('data-page');
             const pageElement = document.getElementById(pageId);
             if (pageElement) pageElement.classList.add('active');
@@ -703,7 +712,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('addWordBtn')?.addEventListener('click', addWord);
         document.getElementById('searchBtn')?.addEventListener('click', findTranslation);
-        document.getElementById('refreshWordsBtn')?.addEventListener('click', loadWords);
 
         // Обработчики для навигации по карточкам
         document.getElementById('nextWordBtn')?.addEventListener('click', nextWord);

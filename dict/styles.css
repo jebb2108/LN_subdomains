@@ -241,8 +241,44 @@ tr:hover {
     transition: background 0.3s;
 }
 
-.delete-btn:hover { 
-    background: #b71c1c; 
+/* Новые стили для кнопки удаления под карточкой */
+.delete-word-btn {
+    background: #f8f5ec;
+    color: #888;
+    border: 1px solid #e0d9c0;
+    border-radius: 6px;
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 15px auto;
+    width: auto;
+    max-width: 200px;
+    opacity: 0.8;
+}
+
+.delete-word-btn:hover {
+    background: #e8e0c9;
+    color: #5a5a5a;
+    opacity: 1;
+    transform: translateY(-1px);
+}
+
+.delete-word-btn:active {
+    transform: translateY(0);
+}
+
+/* Мобильные стили для кнопки удаления */
+@media (max-width: 768px) {
+    .delete-word-btn {
+        padding: 8px 16px;
+        font-size: 0.85rem;
+        max-width: 180px;
+    }
 }
 
 .notification {
