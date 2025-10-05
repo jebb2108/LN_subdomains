@@ -473,6 +473,215 @@ textarea {
     margin-top: 20px;
 }
 
+/* Стили для карточек слов */
+.card-container {
+    position: relative;
+    min-height: 400px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.word-card {
+    background: #fffdf6;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    border: 1px solid #f0e6d2;
+    width: 100%;
+    max-width: 500px;
+    min-height: 350px;
+    padding: 30px;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.word-card:hover {
+    box-shadow: 0 12px 35px rgba(0,0,0,0.12);
+    transform: translateY(-2px);
+}
+
+.word-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    height: 100%;
+}
+
+.word-main {
+    text-align: center;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #e8f5e9;
+}
+
+.word-text {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2e7d32;
+    margin-bottom: 10px;
+    text-transform: lowercase;
+}
+
+.word-text::first-letter {
+    text-transform: uppercase;
+}
+
+.word-translation {
+    font-size: 1.4rem;
+    color: #5a5a5a;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.word-pos {
+    font-size: 1rem;
+    color: #888;
+    font-style: italic;
+}
+
+.word-context {
+    background: #f8f9f5;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 3px solid #2e7d32;
+}
+
+.word-context h4 {
+    color: #2e7d32;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.context-text {
+    color: #5a5a5a;
+    line-height: 1.5;
+    font-style: italic;
+}
+
+.word-audio {
+    text-align: center;
+    margin-top: auto;
+}
+
+.audio-btn {
+    background: #2e7d32;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.audio-btn:hover {
+    background: #388e3c;
+    transform: translateY(-1px);
+}
+
+.audio-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.card-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #f0e6d2;
+}
+
+.nav-btn {
+    background: #f8f5ec;
+    border: 2px solid #e0d9c0;
+    color: #5a5a5a;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1.2rem;
+}
+
+.nav-btn:hover:not(:disabled) {
+    background: #2e7d32;
+    border-color: #2e7d32;
+    color: white;
+    transform: scale(1.05);
+}
+
+.nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.card-counter {
+    color: #888;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #888;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    color: #e0d9c0;
+    margin-bottom: 20px;
+}
+
+.empty-state h3 {
+    color: #5a5a5a;
+    margin-bottom: 10px;
+}
+
+/* Анимации для смены карточек */
+.word-card.fade-out {
+    opacity: 0;
+    transform: translateX(20px);
+}
+
+.word-card.fade-in {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Мобильные стили для карточек */
+@media (max-width: 768px) {
+    .word-card {
+        margin: 10px;
+        padding: 20px;
+        min-height: 300px;
+    }
+    
+    .word-text {
+        font-size: 2rem;
+    }
+    
+    .word-translation {
+        font-size: 1.2rem;
+    }
+    
+    .nav-btn {
+        width: 45px;
+        height: 45px;
+    }
+}
+
 /* Мобильные стили */
 @media (max-width: 768px) {
     body {

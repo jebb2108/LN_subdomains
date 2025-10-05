@@ -103,19 +103,47 @@
                 <h2 class="page-title"><i class="fas fa-book-open"></i> Весь словарь</h2>
                 <button class="btn btn-secondary" id="refreshWordsBtn"><i class="fas fa-sync"></i> Обновить список</button>
 
-                <div class="table-container" id="wordsTableContainer">
+                <div class="card-container" id="wordsCardContainer">
                     <div class="loading-overlay" id="wordsLoading"><div class="spinner"></div></div>
-                    <table id="wordsTable">
-                        <thead>
-                            <tr>
-                                <th>Слово</th>
-                                <th>Часть речи</th>
-                                <th>Перевод</th>
-                                <th>Действия</th>
-                            </tr>
-                        </thead>
-                        <tbody id="wordsList"></tbody>
-                    </table>
+        
+                    <div class="word-card" id="wordCard" style="display: none;">
+                        <div class="word-card-content">
+                            <div class="word-main">
+                                <h3 class="word-text" id="cardWord"></h3>
+                                <div class="word-translation" id="cardTranslation"></div>
+                                <div class="word-pos" id="cardPos"></div>
+                            </div>
+                
+                            <div class="word-context" id="cardContextContainer">
+                                <h4>Контекст:</h4>
+                                <p class="context-text" id="cardContext"></p>
+                            </div>
+                
+                            <div class="word-audio" id="cardAudioContainer">
+                                <button class="audio-btn" id="playAudioBtn">
+                                    <i class="fas fa-play"></i> Воспроизвести
+                                </button>
+                            </div>
+                        </div>
+            
+                        <div class="card-navigation">
+                            <button class="nav-btn prev-btn" id="prevWordBtn">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <div class="card-counter" id="cardCounter"></div>
+                            <button class="nav-btn next-btn" id="nextWordBtn">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+        
+                    <div class="empty-state" id="emptyState" style="display: none;">
+                        <div class="empty-icon">
+                            <i class="fas fa-book-open"></i>
+                        </div>
+                        <h3>Словарь пуст</h3>
+                        <p>Начните добавлять слова в свой словарь!</p>
+                    </div>
                 </div>
             </section>
 
