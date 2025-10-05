@@ -101,11 +101,18 @@ function addMessageToChat(messageData, isMyMessage = false) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${isMyMessage ? 'my-message' : 'other-message'}`;
 
-    // Форматируем время
-    const messageTime = new Date(messageData.created_at).toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+    let messageTime;
+    const date = new Date(messageData.created_at);
+    
+    if (isNaN(date.getTime())) { // Проверка на Invalid Date
+        console.error("Invalid date:", messageData.created_at);
+        messageTime = "только что";
+    } else {
+        messageTime = date.toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
 
     messageDiv.innerHTML = `
         <div class="message-content">${messageData.text}</div>
