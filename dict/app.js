@@ -108,22 +108,28 @@ function displayCurrentCard() {
     const cardCounter = document.getElementById('cardCounter');
     const deleteCardBtn = document.getElementById('deleteCardBtn');
     
+    console.log('Display current card, words count:', currentWords.length); // Для отладки
+    
     if (currentWords.length === 0) {
-        wordCard.style.display = 'none';
+        if (wordCard) wordCard.style.display = 'none';
         if (deleteCardBtn) deleteCardBtn.style.display = 'none';
-        emptyState.style.display = 'block';
+        if (emptyState) emptyState.style.display = 'block';
         return;
     }
 
-    wordCard.style.display = 'block';
-    emptyState.style.display = 'none';
+    if (wordCard) wordCard.style.display = 'block';
+    if (emptyState) emptyState.style.display = 'none';
 
     const currentWord = currentWords[currentCardIndex];
     
     // Обновляем содержимое карточки
-    document.getElementById('cardWord').textContent = currentWord.word || '';
-    document.getElementById('cardTranslation').textContent = currentWord.translation || '';
-    document.getElementById('cardPos').textContent = getPartOfSpeechName(currentWord.part_of_speech || '');
+    const cardWordElement = document.getElementById('cardWord');
+    const cardTranslationElement = document.getElementById('cardTranslation');
+    const cardPosElement = document.getElementById('cardPos');
+    
+    if (cardWordElement) cardWordElement.textContent = currentWord.word || '';
+    if (cardTranslationElement) cardTranslationElement.textContent = currentWord.translation || '';
+    if (cardPosElement) cardPosElement.textContent = getPartOfSpeechName(currentWord.part_of_speech || '');
     
     // Устанавливаем ID слова для кнопки удаления и показываем ее
     if (deleteCardBtn && currentWord.id) {
@@ -134,34 +140,40 @@ function displayCurrentCard() {
     // Контекст
     const contextContainer = document.getElementById('cardContextContainer');
     const contextElement = document.getElementById('cardContext');
-    if (currentWord.context) {
+    if (currentWord.context && contextContainer && contextElement) {
         contextElement.textContent = currentWord.context;
         contextContainer.style.display = 'block';
-    } else {
+    } else if (contextContainer) {
         contextContainer.style.display = 'none';
     }
     
     // Аудио
     const audioContainer = document.getElementById('cardAudioContainer');
     const audioBtn = document.getElementById('playAudioBtn');
-    if (currentWord.audio_url) {
+    if (currentWord.audio_url && audioContainer && audioBtn) {
         audioBtn.onclick = () => playAudio(currentWord.audio_url);
         audioBtn.disabled = false;
         audioContainer.style.display = 'block';
-    } else {
+    } else if (audioContainer) {
         audioContainer.style.display = 'none';
     }
     
     // Счетчик
-    cardCounter.textContent = `${currentCardIndex + 1} / ${currentWords.length}`;
+    if (cardCounter) {
+        cardCounter.textContent = `${currentCardIndex + 1} / ${currentWords.length}`;
+    }
     
     // Обновляем состояние кнопок навигации
-    document.getElementById('prevWordBtn').disabled = currentCardIndex === 0;
-    document.getElementById('nextWordBtn').disabled = currentCardIndex === currentWords.length - 1;
+    const prevBtn = document.getElementById('prevWordBtn');
+    const nextBtn = document.getElementById('nextWordBtn');
+    if (prevBtn) prevBtn.disabled = currentCardIndex === 0;
+    if (nextBtn) nextBtn.disabled = currentCardIndex === currentWords.length - 1;
     
     // Анимация появления
-    wordCard.classList.remove('fade-out');
-    wordCard.classList.add('fade-in');
+    if (wordCard) {
+        wordCard.classList.remove('fade-out');
+        wordCard.classList.add('fade-in');
+    }
 }
 
 // --- Play audio ---
@@ -408,8 +420,18 @@ async function deleteWord(wordId) {
             throw new Error(`Ошибка удаления (${response.status})`);
         }
         showNotification('Слово успешно удалено', 'success');
+        
+        // Перезагружаем слова и обновляем интерфейс
+        await loadWords();
+        
         const activePage = document.querySelector('.page.active');
-        if (activePage && activePage.id === 'all-words') await loadWords();
+        if (activePage && activePage.id === 'all-words') {
+            // Если остались слова, сбрасываем индекс на 0
+            if (currentWords.length > 0) {
+                currentCardIndex = 0;
+                displayCurrentCard();
+            }
+        }
         if (document.getElementById('statistics')?.classList.contains('active')) await loadStatistics();
     } catch (err) {
         console.error('deleteWord error:', err);
@@ -716,6 +738,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // Обработчики для навигации по карточкам
         document.getElementById('nextWordBtn')?.addEventListener('click', nextWord);
         document.getElementById('prevWordBtn')?.addEventListener('click', prevWord);
+
+        // Обработчик для кнопки удаления на карточке
+        document.getElementById('deleteCardBtn')?.addEventListener('click', function() {
+            const wordId = this.getAttribute('data-word-id');
+            if (wordId) {
+                deleteWord(wordId);
+            }
+        });
     }
 
     // 🔄 ИНИЦИАЛИЗАЦИЯ КАСТОМНЫХ КОМПОНЕНТОВ
