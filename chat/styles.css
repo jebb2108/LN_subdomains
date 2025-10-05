@@ -112,29 +112,24 @@ body {
 }
 
 #sendButton {
-    padding: 14px 24px;
+    padding: 12px 20px;
     background-color: #2e7d32;
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 24px;
     cursor: pointer;
     font-weight: 600;
-    font-family: 'Georgia', serif;
-    transition: all 0.3s;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
+    transition: background-color 0.2s;
+    font-size: 14px;
 }
 
 #sendButton:hover {
     background-color: #388e3c;
-    transform: translateY(-1px);
 }
 
 #sendButton:disabled {
     background-color: #9ca3af;
     cursor: not-allowed;
-    transform: none;
 }
 
 .system-message {
