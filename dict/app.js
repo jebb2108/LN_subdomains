@@ -108,7 +108,7 @@ function displayCurrentCard() {
     const cardCounter = document.getElementById('cardCounter');
     const deleteCardBtn = document.getElementById('deleteCardBtn');
     
-    console.log('Display current card, words count:', currentWords.length); // Для отладки
+    console.log('Display current card, words count:', currentWords.length);
     
     if (currentWords.length === 0) {
         if (wordCard) wordCard.style.display = 'none';
@@ -158,7 +158,7 @@ function displayCurrentCard() {
         audioContainer.style.display = 'none';
     }
 
-    // Удаляем старый индикатор если есть
+    // Удаляем старый индикатор, если есть
     const existingIndicator = wordCard.querySelector('.public-word-indicator');
     if (existingIndicator) {
         existingIndicator.remove();
