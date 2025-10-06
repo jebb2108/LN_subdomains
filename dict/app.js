@@ -108,7 +108,8 @@ function displayCurrentCard() {
     const cardCounter = document.getElementById('cardCounter');
     const deleteCardBtn = document.getElementById('deleteCardBtn');
     
-    console.log('Display current card, words count:', currentWords.length); // Для отладки
+    console.log('Display current card, words count:', currentWords.length);
+    console.log('Current word is_public:', currentWords[currentCardIndex]?.is_public);
     
     if (currentWords.length === 0) {
         if (wordCard) wordCard.style.display = 'none';
@@ -158,18 +159,27 @@ function displayCurrentCard() {
         audioContainer.style.display = 'none';
     }
 
-    // Удаляем старый индикатор если есть
-    const existingIndicator = wordCard.querySelector('.public-word-indicator');
-    if (existingIndicator) {
-        existingIndicator.remove();
-    }
-    
-    // Создаем индикатор для публичных слов
-    if (currentWord.is_public) {
-        const publicIndicator = document.createElement('div');
-        publicIndicator.className = 'public-word-indicator';
-        publicIndicator.innerHTML = '<i class="fas fa-eye" title="Публичное слово - видно другим пользователям"></i>';
-        wordCard.querySelector('.word-card-content').appendChild(publicIndicator);
+    // Управление индикатором публичного слова
+    if (wordCard) {
+        // Удаляем старый индикатор
+        const existingIndicator = wordCard.querySelector('.public-word-indicator');
+        if (existingIndicator) {
+            existingIndicator.remove();
+        }
+        
+        // Создаем новый индикатор если слово публичное
+        if (currentWord.is_public) {
+            const publicIndicator = document.createElement('div');
+            publicIndicator.className = 'public-word-indicator';
+            // Иконка земли/глобуса
+            publicIndicator.innerHTML = '<i class="fas fa-globe" title="Публичное слово - видно другим пользователям"></i>';
+            
+            const cardContent = wordCard.querySelector('.word-card-content');
+            if (cardContent) {
+                cardContent.appendChild(publicIndicator);
+                console.log('Public globe indicator added');
+            }
+        }
     }
     
     // Счетчик
@@ -187,62 +197,6 @@ function displayCurrentCard() {
     if (wordCard) {
         wordCard.classList.remove('fade-out');
         wordCard.classList.add('fade-in');
-    }
-}
-
-// --- Play audio ---
-function playAudio(audioUrl) {
-    const audioBtn = document.getElementById('playAudioBtn');
-    const icon = audioBtn.querySelector('i');
-    
-    try {
-        const audio = new Audio(audioUrl);
-        audioBtn.disabled = true;
-        icon.className = 'fas fa-volume-up';
-        
-        audio.play().then(() => {
-            audio.onended = () => {
-                audioBtn.disabled = false;
-                icon.className = 'fas fa-play';
-            };
-        }).catch(error => {
-            console.error('Error playing audio:', error);
-            showNotification('Ошибка воспроизведения аудио', 'error');
-            audioBtn.disabled = false;
-            icon.className = 'fas fa-play';
-        });
-    } catch (error) {
-        console.error('Error with audio:', error);
-        showNotification('Ошибка с аудиофайлом', 'error');
-        audioBtn.disabled = false;
-        icon.className = 'fas fa-play';
-    }
-}
-
-// --- Navigation functions ---
-function nextWord() {
-    if (currentCardIndex < currentWords.length - 1) {
-        const wordCard = document.getElementById('wordCard');
-        wordCard.classList.remove('fade-in');
-        wordCard.classList.add('fade-out');
-        
-        setTimeout(() => {
-            currentCardIndex++;
-            displayCurrentCard();
-        }, 200);
-    }
-}
-
-function prevWord() {
-    if (currentCardIndex > 0) {
-        const wordCard = document.getElementById('wordCard');
-        wordCard.classList.remove('fade-in');
-        wordCard.classList.add('fade-out');
-        
-        setTimeout(() => {
-            currentCardIndex--;
-            displayCurrentCard();
-        }, 200);
     }
 }
 
