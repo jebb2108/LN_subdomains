@@ -14,6 +14,10 @@ let currentCardIndex = 0;
 // API base — используем origin текущей страницы (чтобы не было CORS проблем при том же хосте)
 const API_BASE_URL = window.location.origin || 'https://dict.lllang.site';
 
+// Глобальные переменные для голосовой записи
+window.currentAudioBlob = null;
+window.currentTranscript = '';
+
 // --- Helpers ---
 function showNotification(message, type='success') {
     if (!notificationElement) return;
@@ -52,6 +56,104 @@ function getPartOfSpeechName(code) {
         'other': 'Другое'
     };
     return names[code] || code || '';
+}
+
+// Функция предложения сохранения произношения
+function offerToSavePronunciation(word, audioBlob) {
+    // Создаем модальное окно или диалог
+    const saveDialog = document.createElement('div');
+    saveDialog.className = 'pronunciation-save-dialog';
+    saveDialog.innerHTML = `
+        <div class="dialog-content">
+            <h3>Сохранить произношение?</h3>
+            <p>Слово: "<strong>${word}</strong>"</p>
+            <div class="audio-preview">
+                <audio controls src="${URL.createObjectURL(audioBlob)}"></audio>
+            </div>
+            <div class="dialog-buttons">
+                <button id="savePronunciation" class="btn btn-success">
+                    <i class="fas fa-save"></i> Сохранить
+                </button>
+                <button id="cancelSave" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Отмена
+                </button>
+            </div>
+        </div>
+    `;
+
+    // Стили для диалога
+    saveDialog.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    `;
+
+    saveDialog.querySelector('.dialog-content').style.cssText = `
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        max-width: 400px;
+        width: 90%;
+    `;
+
+    // Добавляем диалог на страницу
+    document.body.appendChild(saveDialog);
+
+    // Обработчики кнопок
+    document.getElementById('savePronunciation').addEventListener('click', function() {
+        savePronunciationToDictionary(word, audioBlob);
+        document.body.removeChild(saveDialog);
+    });
+
+    document.getElementById('cancelSave').addEventListener('click', function() {
+        document.body.removeChild(saveDialog);
+        showNotification('Запись не сохранена', 'info');
+    });
+
+    // Закрытие по клику вне диалога
+    saveDialog.addEventListener('click', function(e) {
+        if (e.target === saveDialog) {
+            document.body.removeChild(saveDialog);
+            showNotification('Запись не сохранена', 'info');
+        }
+    });
+}
+
+// Функция сохранения произношения в словарь
+function savePronunciationToDictionary(word, audioBlob) {
+    // Здесь должна быть логика сохранения в вашем словаре
+    // Пример реализации:
+    
+    // 1. Создаем FormData для отправки на сервер
+    const formData = new FormData();
+    formData.append('word', word);
+    formData.append('pronunciation', audioBlob, `${word}_pronunciation.wav`);
+    
+    // 2. Отправляем на сервер (замените на ваш API endpoint)
+    fetch('/api/save-pronunciation', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Произношение успешно сохранено!', 'success');
+        } else {
+            showNotification('Ошибка при сохранении произношения', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error saving pronunciation:', error);
+        showNotification('Ошибка при сохранении произношения', 'error');
+    });
 }
 
 // --- Load words ---
@@ -348,6 +450,15 @@ async function addWord() {
         }
         
         showNotification(`Слово "${escapeHTML(word)}" добавлено!`, 'success');
+
+        // ПОКАЗЫВАЕМ МОДАЛЬНОЕ ОКНО ДЛЯ СОХРАНЕНИЯ ПРОИЗНОШЕНИЯ ПОСЛЕ ДОБАВЛЕНИЯ СЛОВА
+        if (window.currentAudioBlob && window.currentTranscript) {
+            // Используем слово, которое было добавлено в словарь, а не распознанное
+            offerToSavePronunciation(word, window.currentAudioBlob);
+            // Сбрасываем запись после показа диалога
+            window.currentAudioBlob = null;
+            window.currentTranscript = '';
+        }
 
         const activePage = document.querySelector('.page.active');
         if (activePage && activePage.id === 'all-words') await loadWords();
@@ -671,6 +782,130 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // 🔄 ИНИЦИАЛИЗАЦИЯ ГОЛОСОВОГО ВВОДА
+    function initializeVoiceRecognition() {
+        const voiceRecordBtn = document.getElementById('voiceRecordBtn');
+        if (!voiceRecordBtn) return;
+
+        // Проверяем поддержку браузером
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            voiceRecordBtn.style.display = 'none';
+            showNotification('Голосовой ввод не поддерживается вашим браузером', 'error');
+            return;
+        }
+
+        // Создаем экземпляр распознавания речи
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        // Переменные для хранения данных записи
+        let mediaRecorder = null;
+        let audioChunks = [];
+
+        voiceRecordBtn.addEventListener('click', toggleVoiceRecording);
+        
+        recognition.onstart = function() {
+            isRecording = true;
+            voiceRecordBtn.classList.add('active');
+            voiceRecordBtn.innerHTML = '<i class="fas fa-stop"></i>';
+            showNotification('Говорите сейчас...', 'success');
+            
+            // Сбрасываем предыдущие данные
+            window.currentAudioBlob = null;
+            window.currentTranscript = '';
+            // Начинаем запись аудио
+            startAudioRecording();
+        };
+
+        recognition.onresult = function(event) {
+            window.currentTranscript = event.results[0][0].transcript;
+            const wordInput = document.getElementById('newWord');
+            if (wordInput) {
+                wordInput.value = window.currentTranscript;
+                showNotification(`Распознано: "${window.currentTranscript}"`, 'success');
+            }
+        };
+
+        recognition.onerror = function(event) {
+            console.error('Speech recognition error:', event.error);
+            let errorMessage = 'Ошибка распознавания речи';
+            if (event.error === 'not-allowed') {
+                errorMessage = 'Разрешите доступ к микрофону';
+            } else if (event.error === 'audio-capture') {
+                errorMessage = 'Микрофон не найден';
+            }
+            showNotification(errorMessage, 'error');
+            stopAudioRecording();
+        };
+
+        recognition.onend = function() {
+            if (isRecording) {
+                isRecording = false;
+                const voiceRecordBtn = document.getElementById('voiceRecordBtn');
+                if (voiceRecordBtn) {
+                    voiceRecordBtn.classList.remove('active');
+                    voiceRecordBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+                }
+                
+                // Останавливаем запись аудио
+                stopAudioRecording();
+                
+                // Сохраняем аудиозапись для возможного использования позже
+                if (window.currentTranscript && window.currentAudioBlob) {
+                    // Запись сохранена, будет предложена при добавлении слова
+                    showNotification('Запись готова для сохранения как пример произношения', 'info');
+                }
+            }
+        };
+
+        // Функция начала записи аудио
+        async function startAudioRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = function(event) {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = function() {
+                    window.currentAudioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    
+                    // Освобождаем поток
+                    stream.getTracks().forEach(track => track.stop());
+                };
+
+                mediaRecorder.start();
+            } catch (error) {
+                console.error('Error starting audio recording:', error);
+                showNotification('Ошибка доступа к микрофону', 'error');
+            }
+        }
+
+        // Функция остановки записи аудио
+        function stopAudioRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+        }
+
+        function toggleVoiceRecording() {
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                // Сбрасываем предыдущие данные
+                window.currentAudioBlob = null;
+                window.currentTranscript = '';
+                recognition.start();
+            }
+        }
+    }
+
     // 🔄 ОСНОВНАЯ ФУНКЦИЯ ИНИЦИАЛИЗАЦИИ
     async function initializeApp() {
         let userId = null;
@@ -803,91 +1038,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 console.log('Word visibility:', this.checked ? 'public' : 'private');
             });
-        }
-    }
-
-    // 🔄 ИНИЦИАЛИЗАЦИЯ ГОЛОСОВОГО ВВОДА
-    function initializeVoiceRecognition() {
-        const voiceRecordBtn = document.getElementById('voiceRecordBtn');
-        if (!voiceRecordBtn) return;
-
-        // Проверяем поддержку браузером
-        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-            voiceRecordBtn.style.display = 'none';
-            showNotification('Голосовой ввод не поддерживается вашим браузером', 'error');
-            return;
-        }
-
-        // Создаем экземпляр распознавания речи
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        recognition = new SpeechRecognition();
-        
-        recognition.continuous = false;
-        recognition.interimResults = false;
-        recognition.lang = 'en-US'; // Распознаем английскую речь
-
-        voiceRecordBtn.addEventListener('click', toggleVoiceRecording);
-        
-        recognition.onstart = function() {
-            isRecording = true;
-            voiceRecordBtn.classList.add('active');
-            voiceRecordBtn.innerHTML = '<i class="fas fa-stop"></i>';
-            showNotification('Говорите сейчас...', 'success');
-        };
-
-        recognition.onresult = function(event) {
-            const transcript = event.results[0][0].transcript;
-            const wordInput = document.getElementById('newWord');
-            if (wordInput) {
-                wordInput.value = transcript;
-                showNotification(`Распознано: "${transcript}"`, 'success');
-            }
-        };
-
-        recognition.onerror = function(event) {
-            console.error('Speech recognition error:', event.error);
-            let errorMessage = 'Ошибка распознавания речи';
-            if (event.error === 'not-allowed') {
-                errorMessage = 'Разрешите доступ к микрофону';
-            } else if (event.error === 'audio-capture') {
-                errorMessage = 'Микрофон не найден';
-            }
-            showNotification(errorMessage, 'error');
-        };
-
-        // В функции initializeVoiceRecognition обновляем onend:
-        recognition.onend = function() {
-        // Дублируем остановку на случай, если запись закончилась сама
-        if (isRecording) {
-            isRecording = false;
-            const voiceRecordBtn = document.getElementById('voiceRecordBtn');
-            if (voiceRecordBtn) {
-                voiceRecordBtn.classList.remove('active');
-                voiceRecordBtn.innerHTML = '<i class="fas fa-microphone"></i>';
-            }
-        }
-    };
-    }
-
-    // 🔄 ПЕРЕКЛЮЧЕНИЕ РЕЖИМА ЗАПИСИ ГОЛОСА
-    function toggleVoiceRecording() {
-        if (!recognition) return;
-        
-        if (isRecording) {
-            isRecording = false
-            const voiceRecordBtn = document.getElementById('voiceRecordBtn');
-            if (voiceRecordBtn) {
-                voiceRecordBtn.classList.remove('active');
-                voiceRecordBtn.innerHTML = '<i class="fas fa-microphone"></i>';
-            }
-            recognition.stop();
-        } else {
-            try {
-                recognition.start();
-            } catch (error) {
-                console.error('Error starting speech recognition:', error);
-                showNotification('Ошибка запуска записи', 'error');
-            }
         }
     }
 
