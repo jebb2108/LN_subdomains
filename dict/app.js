@@ -157,6 +157,20 @@ function displayCurrentCard() {
     } else if (audioContainer) {
         audioContainer.style.display = 'none';
     }
+
+    // Удаляем старый индикатор если есть
+    const existingIndicator = wordCard.querySelector('.public-word-indicator');
+    if (existingIndicator) {
+        existingIndicator.remove();
+    }
+    
+    // Создаем индикатор для публичных слов
+    if (currentWord.is_public) {
+        const publicIndicator = document.createElement('div');
+        publicIndicator.className = 'public-word-indicator';
+        publicIndicator.innerHTML = '<i class="fas fa-eye" title="Публичное слово - видно другим пользователям"></i>';
+        wordCard.querySelector('.word-card-content').appendChild(publicIndicator);
+    }
     
     // Счетчик
     if (cardCounter) {

@@ -459,6 +459,22 @@ tr:hover {
     color: white;
 }
 
+/* Стили для индикатора публичного слова */
+.public-word-indicator {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    color: #888;
+    font-size: 0.9rem;
+    opacity: 0.7;
+    z-index: 10;
+}
+
+.public-word-indicator:hover {
+    opacity: 1;
+    color: #666;
+}
+
 .custom-select {
     position: relative;
 }
@@ -546,6 +562,7 @@ textarea {
     flex-direction: column;
     gap: 20px;
     height: 100%;
+    position: relative;
 }
 
 .word-main {
@@ -825,5 +842,11 @@ textarea {
         align-items: center;
         justify-content: center;
         transform: translateY(12px);
+    }
+
+     .public-word-indicator {
+        top: 10px;
+        right: 10px;
+        font-size: 0.8rem;
     }
 }
