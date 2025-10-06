@@ -60,6 +60,8 @@ function getPartOfSpeechName(code) {
 
 // Функция предложения сохранения произношения
 function offerToSavePronunciation(word, audioBlob) {
+    console.log('Показываем модальное окно для слова:', word);
+    
     // Создаем модальное окно или диалог
     const saveDialog = document.createElement('div');
     saveDialog.className = 'pronunciation-save-dialog';
@@ -109,11 +111,19 @@ function offerToSavePronunciation(word, audioBlob) {
 
     // Обработчики кнопок
     document.getElementById('savePronunciation').addEventListener('click', function() {
+        console.log('Пользователь нажал Сохранить');
         savePronunciationToDictionary(word, audioBlob);
+        // Сбрасываем данные после сохранения
+        window.currentAudioBlob = null;
+        window.currentTranscript = '';
         document.body.removeChild(saveDialog);
     });
 
     document.getElementById('cancelSave').addEventListener('click', function() {
+        console.log('Пользователь нажал Отмена');
+        // Сбрасываем данные после отмены
+        window.currentAudioBlob = null;
+        window.currentTranscript = '';
         document.body.removeChild(saveDialog);
         showNotification('Запись не сохранена', 'info');
     });
@@ -121,38 +131,13 @@ function offerToSavePronunciation(word, audioBlob) {
     // Закрытие по клику вне диалога
     saveDialog.addEventListener('click', function(e) {
         if (e.target === saveDialog) {
+            console.log('Закрытие по клику вне диалога');
+            // Сбрасываем данные после закрытия
+            window.currentAudioBlob = null;
+            window.currentTranscript = '';
             document.body.removeChild(saveDialog);
             showNotification('Запись не сохранена', 'info');
         }
-    });
-}
-
-// Функция сохранения произношения в словарь
-function savePronunciationToDictionary(word, audioBlob) {
-    // Здесь должна быть логика сохранения в вашем словаре
-    // Пример реализации:
-    
-    // 1. Создаем FormData для отправки на сервер
-    const formData = new FormData();
-    formData.append('word', word);
-    formData.append('pronunciation', audioBlob, `${word}_pronunciation.wav`);
-    
-    // 2. Отправляем на сервер (замените на ваш API endpoint)
-    fetch('/api/save-pronunciation', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showNotification('Произношение успешно сохранено!', 'success');
-        } else {
-            showNotification('Ошибка при сохранении произношения', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error saving pronunciation:', error);
-        showNotification('Ошибка при сохранении произношения', 'error');
     });
 }
 
@@ -436,7 +421,7 @@ async function addWord() {
         translationInput.value = '';
         if (contextInput) contextInput.value = '';
         if (isPublicToggle) isPublicToggle.checked = false;
-        
+    
         // Останавливаем запись голоса если активна
         const voiceRecordBtn = document.getElementById('voiceRecordBtn');
         if (voiceRecordBtn && voiceRecordBtn.classList.contains('active')) {
@@ -448,16 +433,27 @@ async function addWord() {
                 recognition.stop();
             }
         }
-        
+    
         showNotification(`Слово "${escapeHTML(word)}" добавлено!`, 'success');
 
         // ПОКАЗЫВАЕМ МОДАЛЬНОЕ ОКНО ДЛЯ СОХРАНЕНИЯ ПРОИЗНОШЕНИЯ ПОСЛЕ ДОБАВЛЕНИЯ СЛОВА
+        console.log('Проверка записи:', {
+            hasAudioBlob: !!window.currentAudioBlob,
+            hasTranscript: !!window.currentTranscript,
+            audioBlob: window.currentAudioBlob,
+            transcript: window.currentTranscript
+        });
+
         if (window.currentAudioBlob && window.currentTranscript) {
-            // Используем слово, которое было добавлено в словарь, а не распознанное
+            console.log('Условие выполнено - показываем модальное окно');
+            // Используем слово, которое было добавлено в словарь
             offerToSavePronunciation(word, window.currentAudioBlob);
-            // Сбрасываем запись после показа диалога
-            window.currentAudioBlob = null;
-            window.currentTranscript = '';
+            // НЕ сбрасываем запись сразу - сбросим после закрытия диалога
+        } else {
+            console.log('Условие НЕ выполнено:', {
+                audioBlob: window.currentAudioBlob,
+                transcript: window.currentTranscript
+            });
         }
 
         const activePage = document.querySelector('.page.active');
@@ -828,6 +824,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 wordInput.value = window.currentTranscript;
                 showNotification(`Распознано: "${window.currentTranscript}"`, 'success');
             }
+            console.log('Распознанный текст:', window.currentTranscript);
         };
 
         recognition.onerror = function(event) {
@@ -843,6 +840,12 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         recognition.onend = function() {
+            console.log('Распознавание речи завершено', {
+                isRecording,
+                hasTranscript: !!window.currentTranscript,
+                hasAudioBlob: !!window.currentAudioBlob
+            });
+
             if (isRecording) {
                 isRecording = false;
                 const voiceRecordBtn = document.getElementById('voiceRecordBtn');
@@ -850,15 +853,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     voiceRecordBtn.classList.remove('active');
                     voiceRecordBtn.innerHTML = '<i class="fas fa-microphone"></i>';
                 }
-                
+            
                 // Останавливаем запись аудио
                 stopAudioRecording();
-                
-                // Сохраняем аудиозапись для возможного использования позже
-                if (window.currentTranscript && window.currentAudioBlob) {
-                    // Запись сохранена, будет предложена при добавлении слова
-                    showNotification('Запись готова для сохранения как пример произношения', 'info');
-                }
+            
+                // Ждем немного для завершения обработки аудио
+                setTimeout(() => {
+                    if (window.currentTranscript && window.currentAudioBlob) {
+                        console.log('Запись готова, можно сохранять');
+                        showNotification('Запись готова для сохранения как пример произношения', 'info');
+                    } else {
+                        console.log('Запись не готова:', {
+                            transcript: window.currentTranscript,
+                            audioBlob: window.currentAudioBlob
+                        });
+                    }
+                }, 500);
             }
         };
 
@@ -874,13 +884,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
 
                 mediaRecorder.onstop = function() {
+                    console.log('Аудио запись остановлена, создаем Blob');
                     window.currentAudioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                    
+                    console.log('Blob создан:', window.currentAudioBlob);
+                
                     // Освобождаем поток
                     stream.getTracks().forEach(track => track.stop());
                 };
 
                 mediaRecorder.start();
+                console.log('Запись аудио начата');
             } catch (error) {
                 console.error('Error starting audio recording:', error);
                 showNotification('Ошибка доступа к микрофону', 'error');
@@ -890,18 +903,28 @@ document.addEventListener('DOMContentLoaded', () => {
         // Функция остановки записи аудио
         function stopAudioRecording() {
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                console.log('Останавливаем запись аудио, состояние:', mediaRecorder.state);
                 mediaRecorder.stop();
+            } else {
+                console.log('MediaRecorder не активен или не существует');
             }
         }
 
         function toggleVoiceRecording() {
             if (isRecording) {
+                console.log('Останавливаем запись');
                 recognition.stop();
             } else {
+                console.log('Начинаем запись');
                 // Сбрасываем предыдущие данные
                 window.currentAudioBlob = null;
                 window.currentTranscript = '';
-                recognition.start();
+                try {
+                    recognition.start();
+                } catch (error) {
+                    console.error('Ошибка запуска распознавания:', error);
+                    showNotification('Ошибка запуска записи', 'error');
+                }
             }
         }
     }
